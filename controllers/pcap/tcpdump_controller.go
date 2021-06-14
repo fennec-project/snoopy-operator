@@ -20,6 +20,9 @@ import (
 	"context"
 
 	"fmt"
+	"time"
+
+	"os/exec"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -82,7 +85,21 @@ func (r *TcpdumpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		}
 
 		// run tcpdump from here
-		// tcpdump -i tcpdump.Spec.ifName (-w if setting a file to store the pcap)
+		cmd := exec.Command("tcpdump", "-i", tcpdump.Spec.IfName, "-w",
+			"/pcap-data/"+tcpdump.Spec.PodName+"_"+tcpdump.Spec.IfName+"_"+time.Now().String()+".pcap")
+
+		if err := cmd.Start(); err != nil {
+			return err
+		}
+
+		fmt.Printf("Starting tcpdump on interface %s at %v\n", tcpdump.Spec.IfName, time.Now())
+
+		time.Sleep(time.Duration(tcpdump.Spec.Duration) * time.Minute)
+
+		if err := cmd.Process.Kill(); err != nil {
+			return err
+		}
+		fmt.Printf("Stopping tcpdump on interface %s at %v\n", tcpdump.Spec.IfName, time.Now())
 
 		return nil
 	})

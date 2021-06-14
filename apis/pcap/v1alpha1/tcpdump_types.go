@@ -17,8 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"time"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -35,7 +33,7 @@ type TcpdumpSpec struct {
 	IfName string `json:"ifName,omitempty"`
 
 	// Duration packet capture duration in minutes
-	Duration time.Duration
+	Duration int
 }
 
 // TcpdumpStatus defines the observed state of Tcpdump
