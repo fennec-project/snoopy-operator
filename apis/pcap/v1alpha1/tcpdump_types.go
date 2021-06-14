@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"time"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -31,6 +33,9 @@ type TcpdumpSpec struct {
 
 	// Network virtual interface or link name on the pod to run tcpdump on
 	IfName string `json:"ifName,omitempty"`
+
+	// Duration packet capture duration in minutes
+	Duration time.Duration
 }
 
 // TcpdumpStatus defines the observed state of Tcpdump
