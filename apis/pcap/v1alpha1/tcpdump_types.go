@@ -33,7 +33,7 @@ type TcpdumpSpec struct {
 	IfName string `json:"ifName,omitempty"`
 
 	// Duration packet capture duration in minutes
-	Duration int
+	Duration int `json:"duration,omitempty"`
 }
 
 // TcpdumpStatus defines the observed state of Tcpdump

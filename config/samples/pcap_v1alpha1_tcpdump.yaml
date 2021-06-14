@@ -3,5 +3,7 @@ kind: Tcpdump
 metadata:
   name: tcpdump-sample
 spec:
-  # Add fields here
-  foo: bar
+
+  podName: cnf-example-a-7cdb5b9fff-hhcdt
+  ifName: pno3719330
+  duration: 2
