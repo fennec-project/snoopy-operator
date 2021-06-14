@@ -1,0 +1,24 @@
+# permissions for end users to edit tcpdumps.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: tcpdump-editor-role
+rules:
+- apiGroups:
+  - pcap.snoopy-operator.io
+  resources:
+  - tcpdumps
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - pcap.snoopy-operator.io
+  resources:
+  - tcpdumps/status
+  verbs:
+  - get

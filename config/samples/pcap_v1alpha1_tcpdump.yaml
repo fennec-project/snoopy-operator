@@ -1,0 +1,7 @@
+apiVersion: pcap.snoopy-operator.io/v1alpha1
+kind: Tcpdump
+metadata:
+  name: tcpdump-sample
+spec:
+  # Add fields here
+  foo: bar
