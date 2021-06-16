@@ -61,7 +61,7 @@ func (r *TcpdumpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	targetPod := corev1.Pod{}
-	err = r.Client.Get(context.Background(), client.ObjectKey{Name: tcpdump.Spec.PodName}, &targetPod)
+	err = r.Client.Get(context.Background(), client.ObjectKey{Namespace: "cnf-telco", Name: tcpdump.Spec.PodName}, &targetPod)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -86,7 +86,7 @@ func (r *TcpdumpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 		// run tcpdump from here
 		cmd := exec.Command("tcpdump", "-i", tcpdump.Spec.IfName, "-w",
-			"/pcap-data/"+tcpdump.Spec.PodName+"_"+tcpdump.Spec.IfName+"_"+time.Now().String()+".pcap")
+			"/pcap-data/test.pcap")
 
 		if err := cmd.Start(); err != nil {
 			return err

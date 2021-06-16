@@ -38,8 +38,9 @@ type TcpdumpSpec struct {
 
 // TcpdumpStatus defines the observed state of Tcpdump
 type TcpdumpStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	StartTime    string `json:"startTime,omitempty"`
+	EndTime      string `json:"endTime,omitempty"`
+	PcapFilePath string `json:"pcapFilePath,omitempty"`
 }
 
 //+kubebuilder:object:root=true
