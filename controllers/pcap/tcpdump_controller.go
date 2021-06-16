@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"time"
 
+	"strings"
+
 	"os/exec"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -43,6 +45,8 @@ type TcpdumpReconciler struct {
 	Scheme *runtime.Scheme
 }
 
+var capBool bool
+
 //+kubebuilder:rbac:groups=pcap.snoopy-operator.io,resources=tcpdumps,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=pcap.snoopy-operator.io,resources=tcpdumps/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=pcap.snoopy-operator.io,resources=tcpdumps/finalizers,verbs=update
@@ -58,6 +62,11 @@ func (r *TcpdumpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	err := r.Client.Get(context.Background(), req.NamespacedName, tcpdump)
 	if err != nil {
 		return ctrl.Result{}, err
+	}
+
+	if tcpdump.Status.StartTime != "" {
+		fmt.Printf("tcpdump %s is running or already done.", tcpdump.ObjectMeta.Name)
+		return ctrl.Result{}, nil
 	}
 
 	targetPod := corev1.Pod{}
@@ -84,11 +93,21 @@ func (r *TcpdumpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			return fmt.Errorf("Interface could not be found: %v", err)
 		}
 
-		// run tcpdump from here
-		cmd := exec.Command("tcpdump", "-i", tcpdump.Spec.IfName, "-w",
-			"/pcap-data/test.pcap")
+		pcapFile := "/pcap-data/" + tcpdump.Spec.PodName + "_" + strings.ReplaceAll(time.Now().String(), " ", "_") + ".pcap"
+
+		// Running tcpdump on given Pod and Interface
+		cmd := exec.Command("tcpdump", "-i", tcpdump.Spec.IfName, "-w", pcapFile)
 
 		if err := cmd.Start(); err != nil {
+			return err
+		}
+
+		// Updating start time for the current tcpdump packet capture
+		tcpdump.Status.StartTime = time.Now().String()
+		tcpdump.Status.PcapFilePath = pcapFile
+
+		err = r.Client.Update(context.Background(), tcpdump)
+		if err != nil {
 			return err
 		}
 
@@ -99,7 +118,15 @@ func (r *TcpdumpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		if err := cmd.Process.Kill(); err != nil {
 			return err
 		}
+
 		fmt.Printf("Stopping tcpdump on interface %s at %v\n", tcpdump.Spec.IfName, time.Now())
+
+		// Updating end time for the current tcpdump packet capture
+		tcpdump.Status.EndTime = time.Now().String()
+		err = r.Client.Update(context.Background(), tcpdump)
+		if err != nil {
+			return err
+		}
 
 		return nil
 	})
