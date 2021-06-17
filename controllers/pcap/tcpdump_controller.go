@@ -22,8 +22,6 @@ import (
 	"fmt"
 	"time"
 
-	"strings"
-
 	"os/exec"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -93,12 +91,14 @@ func (r *TcpdumpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			return fmt.Errorf("Interface could not be found: %v", err)
 		}
 
-		pcapFile := "/pcap-data/" + tcpdump.Spec.PodName + "_" + strings.ReplaceAll(time.Now().String(), " ", "_") + ".pcap"
+		pcapFile := "/pcap-data/" + tcpdump.Spec.PodName + ".pcap"
 
 		// Running tcpdump on given Pod and Interface
 		cmd := exec.Command("tcpdump", "-i", tcpdump.Spec.IfName, "-w", pcapFile)
 
-		if err := cmd.Start(); err != nil {
+		err = cmd.Start()
+		if err != nil {
+			fmt.Println(err)
 			return err
 		}
 
@@ -106,7 +106,7 @@ func (r *TcpdumpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		tcpdump.Status.StartTime = time.Now().String()
 		tcpdump.Status.PcapFilePath = pcapFile
 
-		err = r.Client.Update(context.Background(), tcpdump)
+		err = r.Status().Update(context.Background(), tcpdump)
 		if err != nil {
 			return err
 		}
@@ -116,6 +116,7 @@ func (r *TcpdumpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		time.Sleep(time.Duration(tcpdump.Spec.Duration) * time.Minute)
 
 		if err := cmd.Process.Kill(); err != nil {
+			fmt.Println(err)
 			return err
 		}
 
@@ -123,7 +124,7 @@ func (r *TcpdumpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 		// Updating end time for the current tcpdump packet capture
 		tcpdump.Status.EndTime = time.Now().String()
-		err = r.Client.Update(context.Background(), tcpdump)
+		err = r.Status().Update(context.Background(), tcpdump)
 		if err != nil {
 			return err
 		}

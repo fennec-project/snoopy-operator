@@ -4,6 +4,6 @@ metadata:
   name: tcpdump-sample
 spec:
 
-  podName: cnf-example-a-7cdb5b9fff-hhcdt
-  ifName: pno3719330
-  duration: 2
+  podName: cnf-example-a-7cdb5b9fff-9pbsh
+  ifName: eth0
+  duration: 3

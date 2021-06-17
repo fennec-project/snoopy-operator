@@ -36,6 +36,9 @@ spec:
           spec:
             description: TcpdumpSpec defines the desired state of Tcpdump
             properties:
+              duration:
+                description: Duration packet capture duration in minutes
+                type: integer
               ifName:
                 description: Network virtual interface or link name on the pod to
                   run tcpdump on
@@ -47,6 +50,13 @@ spec:
             type: object
           status:
             description: TcpdumpStatus defines the observed state of Tcpdump
+            properties:
+              endTime:
+                type: string
+              pcapFilePath:
+                type: string
+              startTime:
+                type: string
             type: object
         type: object
     served: true
