@@ -6,4 +6,4 @@ spec:
 
   podName: cnf-example-a-7cdb5b9fff-9pbsh
   ifName: eth0
-  duration: 3
+  duration: 1
