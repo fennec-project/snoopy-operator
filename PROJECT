@@ -1,4 +1,4 @@
-domain: snoopy-operator.io
+domain: fennecproject.io
 layout:
 - go.kubebuilder.io/v3
 multigroup: true
@@ -6,15 +6,15 @@ plugins:
   manifests.sdk.operatorframework.io/v2: {}
   scorecard.sdk.operatorframework.io/v2: {}
 projectName: snoopy-operator
-repo: github.com/acmenezes/snoopy-operator
+repo: github.com/fennec-project/snoopy-operator
 resources:
 - api:
     crdVersion: v1
     namespaced: true
   controller: true
-  domain: snoopy-operator.io
+  domain: fennecproject.io
   group: pcap
   kind: Tcpdump
-  path: github.com/acmenezes/snoopy-operator/apis/pcap/v1alpha1
+  path: github.com/fennec-project/snoopy-operator/apis/pcap/v1alpha1
   version: v1alpha1
 version: "3"

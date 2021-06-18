@@ -1,4 +1,4 @@
-module github.com/acmenezes/snoopy-operator
+module github.com/fennec-project/snoopy-operator
 
 go 1.16
 

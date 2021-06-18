@@ -5,7 +5,7 @@ metadata:
   name: tcpdump-viewer-role
 rules:
 - apiGroups:
-  - pcap.snoopy-operator.io
+  - pcap.fennecproject.io
   resources:
   - tcpdumps
   verbs:
@@ -13,7 +13,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - pcap.snoopy-operator.io
+  - pcap.fennecproject.io
   resources:
   - tcpdumps/status
   verbs:

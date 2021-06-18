@@ -2,7 +2,7 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: tcpdumps.pcap.snoopy-operator.io
+  name: tcpdumps.pcap.fennecproject.io
 spec:
   conversion:
     strategy: Webhook

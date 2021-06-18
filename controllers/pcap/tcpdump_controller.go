@@ -34,7 +34,7 @@ import (
 	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/vishvananda/netlink"
 
-	pcapv1alpha1 "github.com/acmenezes/snoopy-operator/apis/pcap/v1alpha1"
+	pcapv1alpha1 "github.com/fennec-project/snoopy-operator/apis/pcap/v1alpha1"
 )
 
 // TcpdumpReconciler reconciles a Tcpdump object
@@ -45,9 +45,9 @@ type TcpdumpReconciler struct {
 
 var capBool bool
 
-//+kubebuilder:rbac:groups=pcap.snoopy-operator.io,resources=tcpdumps,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=pcap.snoopy-operator.io,resources=tcpdumps/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=pcap.snoopy-operator.io,resources=tcpdumps/finalizers,verbs=update
+//+kubebuilder:rbac:groups=pcap.fennecproject.io,resources=tcpdumps,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=pcap.fennecproject.io,resources=tcpdumps/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=pcap.fennecproject.io,resources=tcpdumps/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.

@@ -30,7 +30,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	pcapv1alpha1 "github.com/acmenezes/snoopy-operator/apis/pcap/v1alpha1"
+	pcapv1alpha1 "github.com/fennec-project/snoopy-operator/apis/pcap/v1alpha1"
 	//+kubebuilder:scaffold:imports
 )
 

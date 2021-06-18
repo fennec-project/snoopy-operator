@@ -6,9 +6,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.4.1
   creationTimestamp: null
-  name: tcpdumps.pcap.snoopy-operator.io
+  name: tcpdumps.pcap.fennecproject.io
 spec:
-  group: pcap.snoopy-operator.io
+  group: pcap.fennecproject.io
   names:
     kind: Tcpdump
     listKind: TcpdumpList

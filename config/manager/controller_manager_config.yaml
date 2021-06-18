@@ -8,4 +8,4 @@ webhook:
   port: 9443
 leaderElection:
   leaderElect: true
-  resourceName: d86c1e11.snoopy-operator.io
+  resourceName: d86c1e11.fennecproject.io

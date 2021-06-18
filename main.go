@@ -31,8 +31,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	pcapv1alpha1 "github.com/acmenezes/snoopy-operator/apis/pcap/v1alpha1"
-	pcapcontrollers "github.com/acmenezes/snoopy-operator/controllers/pcap"
+	pcapv1alpha1 "github.com/fennec-project/snoopy-operator/apis/pcap/v1alpha1"
+	pcapcontrollers "github.com/fennec-project/snoopy-operator/controllers/pcap"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -72,7 +72,7 @@ func main() {
 		Port:                   9443,
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "d86c1e11.snoopy-operator.io",
+		LeaderElectionID:       "d86c1e11.fennecproject.io",
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")

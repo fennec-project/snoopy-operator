@@ -1,9 +1,9 @@
-apiVersion: pcap.snoopy-operator.io/v1alpha1
+apiVersion: pcap.fennecproject.io/v1alpha1
 kind: Tcpdump
 metadata:
   name: tcpdump-sample
 spec:
 
-  podName: cnf-example-a-7cdb5b9fff-9pbsh
+  podName: cnf-example-a-7cdb5b9fff-knrk9
   ifName: eth0
   duration: 1
