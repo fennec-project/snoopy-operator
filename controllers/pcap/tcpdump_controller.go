@@ -74,7 +74,7 @@ func (r *TcpdumpReconciler) GetRunningPodsByLabel(label map[string]string, names
 	}
 
 	if len(podlist.Items) <= 0 {
-		return nil, fmt.Errorf("No pod corresponds to label %v and namespace %v ", label, namespace)
+		return nil, fmt.Errorf("no running pod corresponds to label %v and namespace %v ", label, namespace)
 	}
 
 	return podlist, nil
