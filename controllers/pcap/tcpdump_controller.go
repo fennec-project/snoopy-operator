@@ -20,9 +20,6 @@ import (
 	"context"
 
 	"fmt"
-	"time"
-
-	"os/exec"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -30,9 +27,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	corev1 "k8s.io/api/core/v1"
-
-	"github.com/containernetworking/plugins/pkg/ns"
-	"github.com/vishvananda/netlink"
 
 	pcapv1alpha1 "github.com/fennec-project/snoopy-operator/apis/pcap/v1alpha1"
 )
@@ -67,72 +61,23 @@ func (r *TcpdumpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, nil
 	}
 
-	targetPod := corev1.Pod{}
-	err = r.Client.Get(context.Background(), client.ObjectKey{Namespace: "cnf-telco", Name: tcpdump.Spec.PodName}, &targetPod)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-
-	pid, err := getPid(targetPod)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-
-	// Get the pods namespace object
-	targetNS, err := ns.GetNS("/host/proc/" + pid + "/ns/net")
-	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("Error getting Pod network namespace: %v", err)
-	}
-
-	err = targetNS.Do(func(hostNs ns.NetNS) error {
-
-		_, err := netlink.LinkByName(tcpdump.Spec.IfName)
-		if err != nil {
-			return fmt.Errorf("Interface could not be found: %v", err)
-		}
-
-		pcapFile := "/pcap-data/" + tcpdump.Spec.PodName + ".pcap"
-
-		// Running tcpdump on given Pod and Interface
-		cmd := exec.Command("tcpdump", "-i", tcpdump.Spec.IfName, "-w", pcapFile)
-
-		err = cmd.Start()
-		if err != nil {
-			fmt.Println(err)
-			return err
-		}
-
-		// Updating start time for the current tcpdump packet capture
-		tcpdump.Status.StartTime = time.Now().String()
-		tcpdump.Status.PcapFilePath = pcapFile
-
-		err = r.Status().Update(context.Background(), tcpdump)
-		if err != nil {
-			return err
-		}
-
-		fmt.Printf("Starting tcpdump on interface %s at %v\n", tcpdump.Spec.IfName, time.Now())
-
-		time.Sleep(time.Duration(tcpdump.Spec.Duration) * time.Minute)
-
-		if err := cmd.Process.Kill(); err != nil {
-			fmt.Println(err)
-			return err
-		}
-
-		fmt.Printf("Stopping tcpdump on interface %s at %v\n", tcpdump.Spec.IfName, time.Now())
-
-		// Updating end time for the current tcpdump packet capture
-		tcpdump.Status.EndTime = time.Now().String()
-		err = r.Status().Update(context.Background(), tcpdump)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-
 	return ctrl.Result{}, nil
+}
+
+func (r *TcpdumpReconciler) GetRunningPodsByLabel(label map[string]string, namespace string) (*corev1.PodList, error) {
+
+	var podlist *corev1.PodList
+	err := r.Client.List(context.Background(), podlist, client.MatchingLabels(label), client.InNamespace(namespace), client.MatchingFields{"Status.Phase": "Running"})
+	if err != nil {
+		fmt.Printf("GetRunningPodsByLabel, Error listing pods for tcpdump %s ", err.Error())
+		return nil, err
+	}
+
+	if len(podlist.Items) <= 0 {
+		return nil, fmt.Errorf("No pod corresponds to label %v and namespace %v ", label, namespace)
+	}
+
+	return podlist, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
