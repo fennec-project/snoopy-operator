@@ -70,7 +70,24 @@ func (r *TcpdumpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	for _, pod := range podlist.Items {
 
-		// GeneratePodtracerArgs
+		// GeneratePodtracerArgs with packetCount
+		if tcpdump.Spec.PacketCount != 0 {
+
+			podtracerArgs, err := r.GeneratePodtracerArgs(tcpdump.Spec.InterfaceName, tcpdump.Spec.PacketCount, 0, tcpdump.Spec.PcapFilePath, pod.ObjectMeta.Name, tcpdump.Spec.TargetNamespace)
+			if err != nil {
+				fmt.Printf(err.Error())
+				return ctrl.Result{}, err
+			}
+
+		} else { // GeneratePodtracerArgs with fileSize
+
+			podtracerArgs, err = r.GeneratePodtracerArgs(tcpdump.Spec.InterfaceName, 0, tcpdump.Spec.FileSize, tcpdump.Spec.PcapFilePath, pod.ObjectMeta.Name, tcpdump.Spec.TargetNamespace)
+			if err != nil {
+				fmt.Printf(err.Error())
+				return ctrl.Result{}, err
+			}
+
+		}
 
 		// GenerateTcpdumpJob
 
@@ -99,7 +116,7 @@ func (r *TcpdumpReconciler) GetRunningPodsByLabel(label map[string]string, names
 	return podlist, nil
 }
 
-func (r *TcpdumpReconciler) GeneratePodtracerArgs(interfaceName string, packetCount int64, fileSize int64, pcapFilePath string) (string, error) {
+func (r *TcpdumpReconciler) GeneratePodtracerArgs(interfaceName string, packetCount int64, fileSize int64, pcapFilePath string, targetPodName string, targetNamespace string) (string, error) {
 	var podtracerArgs string
 	var podtracerArgsList []string
 
@@ -110,6 +127,11 @@ func (r *TcpdumpReconciler) GeneratePodtracerArgs(interfaceName string, packetCo
 		podtracerArgsList = append(podtracerArgsList, string(packetCount))
 		podtracerArgsList = append(podtracerArgsList, "-w")
 		podtracerArgsList = append(podtracerArgsList, pcapFilePath)
+		podtracerArgsList = append(podtracerArgsList, "--pod")
+		podtracerArgsList = append(podtracerArgsList, targetPodName)
+		podtracerArgsList = append(podtracerArgsList, "-n")
+		podtracerArgsList = append(podtracerArgsList, targetNamespace)
+
 	} else {
 		podtracerArgsList = append(podtracerArgsList, "-i")
 		podtracerArgsList = append(podtracerArgsList, interfaceName)
@@ -117,6 +139,11 @@ func (r *TcpdumpReconciler) GeneratePodtracerArgs(interfaceName string, packetCo
 		podtracerArgsList = append(podtracerArgsList, string(fileSize))
 		podtracerArgsList = append(podtracerArgsList, "-w")
 		podtracerArgsList = append(podtracerArgsList, pcapFilePath)
+		podtracerArgsList = append(podtracerArgsList, "--pod")
+		podtracerArgsList = append(podtracerArgsList, targetPodName)
+		podtracerArgsList = append(podtracerArgsList, "-n")
+		podtracerArgsList = append(podtracerArgsList, targetNamespace)
+
 	}
 
 	podtracerArgsList = append(podtracerArgsList, "-i")
