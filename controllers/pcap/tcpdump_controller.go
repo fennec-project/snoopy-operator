@@ -37,8 +37,6 @@ type TcpdumpReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-var capBool bool
-
 //+kubebuilder:rbac:groups=pcap.fennecproject.io,resources=tcpdumps,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=pcap.fennecproject.io,resources=tcpdumps/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=pcap.fennecproject.io,resources=tcpdumps/finalizers,verbs=update
