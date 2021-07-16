@@ -21,12 +21,13 @@ import (
 
 	"fmt"
 
+	"strings"
+
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	corev1 "k8s.io/api/core/v1"
 
 	pcapv1alpha1 "github.com/fennec-project/snoopy-operator/apis/pcap/v1alpha1"
 )
@@ -96,6 +97,33 @@ func (r *TcpdumpReconciler) GetRunningPodsByLabel(label map[string]string, names
 	}
 
 	return podlist, nil
+}
+
+func (r *TcpdumpReconciler) GeneratePodtracerArgs(interfaceName string, packetCount int64, fileSize int64, pcapFilePath string) (string, error) {
+	var podtracerArgs string
+	var podtracerArgsList []string
+
+	if packetCount != 0 {
+		podtracerArgsList = append(podtracerArgsList, "-i")
+		podtracerArgsList = append(podtracerArgsList, interfaceName)
+		podtracerArgsList = append(podtracerArgsList, "-c")
+		podtracerArgsList = append(podtracerArgsList, string(packetCount))
+		podtracerArgsList = append(podtracerArgsList, "-w")
+		podtracerArgsList = append(podtracerArgsList, pcapFilePath)
+	} else {
+		podtracerArgsList = append(podtracerArgsList, "-i")
+		podtracerArgsList = append(podtracerArgsList, interfaceName)
+		podtracerArgsList = append(podtracerArgsList, "-C")
+		podtracerArgsList = append(podtracerArgsList, string(fileSize))
+		podtracerArgsList = append(podtracerArgsList, "-w")
+		podtracerArgsList = append(podtracerArgsList, pcapFilePath)
+	}
+
+	podtracerArgsList = append(podtracerArgsList, "-i")
+
+	podtracerArgs = strings.Join(podtracerArgsList, " ")
+
+	return podtracerArgs, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
