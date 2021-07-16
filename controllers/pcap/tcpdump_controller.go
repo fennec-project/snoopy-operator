@@ -54,9 +54,29 @@ func (r *TcpdumpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, err
 	}
 
+	// Check tcpdump start time to see if it's already placed or in progress
+	// TODO: refactor status field.
 	if tcpdump.Status.StartTime != "" {
 		fmt.Printf("tcpdump %s is running or already done.", tcpdump.ObjectMeta.Name)
 		return ctrl.Result{}, nil
+	}
+
+	podlist, err := r.GetRunningPodsByLabel(tcpdump.Spec.PodLabel, tcpdump.Spec.TargetNamespace)
+	if err != nil {
+		fmt.Printf(err.Error())
+		return ctrl.Result{Requeue: true}, err
+	}
+
+	for _, pod := range podlist.Items {
+
+		// GeneratePodtracerArgs
+
+		// GenerateTcpdumpJob
+
+		// UpdateStatusOnCR
+
+		// VerifyPcapFileAfterCompletion
+
 	}
 
 	return ctrl.Result{}, nil
