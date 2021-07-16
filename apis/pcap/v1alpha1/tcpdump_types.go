@@ -26,14 +26,26 @@ import (
 // TcpdumpSpec defines the desired state of Tcpdump
 type TcpdumpSpec struct {
 
-	// Target pod where the tcpdump command will get packets from
-	PodName string `json:"podName,omitempty"`
+	// tcpdump profile name to be applied to a set of pods
+	Name string `json:"name,omitempty"`
+
+	// Namespace where the target pods live
+	TargetNamespace string `json:"targetNamespace,omitempty"`
+
+	// Label to identify the target pods
+	PodLabel map[string]string `json:"podLabel,omitempty"`
 
 	// Network virtual interface or link name on the pod to run tcpdump on
-	IfName string `json:"ifName,omitempty"`
+	InterfaceName string `json:"interfaceName,omitempty"`
 
-	// Duration packet capture duration in minutes
-	Duration int `json:"duration,omitempty"`
+	// Equivalent to tcpdump -c parameter
+	PacketCount int64 `json:"packetCount,omitempty"`
+
+	// Equivalent to tcpdump -C (upper case) parameter
+	FileSize int64 `json:"fileSize,omitempty"`
+
+	// Equivalent to -w tcpdump parameter
+	PcapFilePath string `json:"pcapFilePath,omitempty"`
 }
 
 // TcpdumpStatus defines the observed state of Tcpdump
