@@ -21,7 +21,7 @@ func testTcpdumpController(t *testing.T) {
 		tcpdumpPodLabel map[string]string
 		tcpdumpInterfaceName string
 		tcpdumpPacketCount int64
-		tcpdumpFileSize int32
+		tcpdumpFileSize int64
 		tcpdumpPcapFilePath string
 		// TODO tcpdumpPauseJobs and/or tcpdumpAbortJobs for specific CR
 		}{

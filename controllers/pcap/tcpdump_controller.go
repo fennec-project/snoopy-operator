@@ -23,11 +23,14 @@ import (
 
 	"strings"
 
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	pcapv1alpha1 "github.com/fennec-project/snoopy-operator/apis/pcap/v1alpha1"
 )
@@ -86,7 +89,6 @@ func (r *TcpdumpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 				fmt.Printf(err.Error())
 				return ctrl.Result{}, err
 			}
-
 		}
 
 		// GenerateTcpdumpJob
@@ -151,6 +153,35 @@ func (r *TcpdumpReconciler) GeneratePodtracerArgs(interfaceName string, packetCo
 	podtracerArgs = strings.Join(podtracerArgsList, " ")
 
 	return podtracerArgs, nil
+}
+
+func (r *TcpdumpReconciler) GenerateTcpdumpJob(podtracerArgs string, targetPodName string) (*batchv1.Job, error) {
+
+	var job *batchv1.Job
+
+	var jobObjectMeta metav1.ObjectMeta
+	var jobPodTemplate corev1.PodTemplateSpec
+	var jobSpec batchv1.JobSpec
+
+	// TODO: improve the labeling system to identify jobs running
+	jobObjectMeta = metav1.ObjectMeta{
+		Name: "tcpdumpJobForPod-" + targetPodName,
+		Labels: map[string]string{
+			"tcpdumpJob": "snoopy-operator",
+		},
+	}
+
+	jobPodTemplate = corev1.PodTemplateSpec{
+		Spec: corev1.PodSpec{
+			// TODO: copy spec from goremote at first
+		},
+	}
+
+	jobSpec = batchv1.JobSpec{}
+
+	// err = r.Client.Create(context.Background(), job)
+
+	return job, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
