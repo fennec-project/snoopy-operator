@@ -167,6 +167,11 @@ func (r *TcpdumpReconciler) GenerateTcpdumpJob(podtracerArgsList []string, targe
 	var jobPodTemplate corev1.PodTemplateSpec
 	var jobSpec batchv1.JobSpec
 	var privileged bool
+	var HostPathDirectory corev1.HostPathType
+	var HostPathSocket corev1.HostPathType
+
+	HostPathDirectory = "Directory"
+	HostPathSocket = "Socket"
 
 	privileged = true
 
@@ -194,10 +199,35 @@ func (r *TcpdumpReconciler) GenerateTcpdumpJob(podtracerArgsList []string, targe
 					SecurityContext: &corev1.SecurityContext{
 						Privileged: &privileged,
 					},
-					VolumeMounts: goRemote.Spec.VolumeMounts,
+					VolumeMounts: []corev1.VolumeMount{
+						{Name: "proc",
+							MountPath: "/host/proc",
+							ReadOnly:  false},
+						{Name: "crio-sock",
+							MountPath: "/var/run/crio/crio.sock",
+							ReadOnly:  false},
+					},
 				},
 			},
-			Volumes: goRemote.Spec.Volumes,
+			Volumes: []corev1.Volume{{
+				Name: "proc",
+				VolumeSource: corev1.VolumeSource{
+					HostPath: &corev1.HostPathVolumeSource{
+						Path: "/proc",
+						Type: &HostPathDirectory,
+					},
+				},
+			},
+				{
+					Name: "crio-sock",
+					VolumeSource: corev1.VolumeSource{
+						HostPath: &corev1.HostPathVolumeSource{
+							Path: "/var/run/crio/crio.sock",
+							Type: &HostPathSocket,
+						},
+					},
+				},
+			},
 		},
 	}
 
