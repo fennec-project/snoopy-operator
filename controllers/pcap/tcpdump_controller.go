@@ -18,10 +18,9 @@ package pcap
 
 import (
 	"context"
+	"strings"
 
 	"fmt"
-
-	"strings"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -118,50 +117,58 @@ func (r *TcpdumpReconciler) GetRunningPodsByLabel(label map[string]string, names
 	return podlist, nil
 }
 
-func (r *TcpdumpReconciler) GeneratePodtracerArgs(interfaceName string, packetCount int64, fileSize int64, pcapFilePath string, targetPodName string, targetNamespace string) (string, error) {
-	var podtracerArgs string
+func (r *TcpdumpReconciler) GeneratePodtracerArgs(command string, args string, targetPodName string, targetNamespace string) ([]string, error) {
+
 	var podtracerArgsList []string
 
-	if packetCount != 0 {
-		podtracerArgsList = append(podtracerArgsList, "-i")
-		podtracerArgsList = append(podtracerArgsList, interfaceName)
-		podtracerArgsList = append(podtracerArgsList, "-c")
-		podtracerArgsList = append(podtracerArgsList, string(packetCount))
-		podtracerArgsList = append(podtracerArgsList, "-w")
-		podtracerArgsList = append(podtracerArgsList, pcapFilePath)
-		podtracerArgsList = append(podtracerArgsList, "--pod")
-		podtracerArgsList = append(podtracerArgsList, targetPodName)
-		podtracerArgsList = append(podtracerArgsList, "-n")
-		podtracerArgsList = append(podtracerArgsList, targetNamespace)
+	podtracerArgsList = append(podtracerArgsList, command)
+	podtracerArgsList = append(podtracerArgsList, args)
+	podtracerArgsList = append(podtracerArgsList, "--pod")
+	podtracerArgsList = append(podtracerArgsList, targetPodName)
+	podtracerArgsList = append(podtracerArgsList, "-n")
+	podtracerArgsList = append(podtracerArgsList, targetNamespace)
 
-	} else {
-		podtracerArgsList = append(podtracerArgsList, "-i")
-		podtracerArgsList = append(podtracerArgsList, interfaceName)
-		podtracerArgsList = append(podtracerArgsList, "-C")
-		podtracerArgsList = append(podtracerArgsList, string(fileSize))
-		podtracerArgsList = append(podtracerArgsList, "-w")
-		podtracerArgsList = append(podtracerArgsList, pcapFilePath)
-		podtracerArgsList = append(podtracerArgsList, "--pod")
-		podtracerArgsList = append(podtracerArgsList, targetPodName)
-		podtracerArgsList = append(podtracerArgsList, "-n")
-		podtracerArgsList = append(podtracerArgsList, targetNamespace)
-
-	}
-
-	podtracerArgsList = append(podtracerArgsList, "-i")
-
-	podtracerArgs = strings.Join(podtracerArgsList, " ")
-
-	return podtracerArgs, nil
+	return podtracerArgsList, nil
 }
 
-func (r *TcpdumpReconciler) GenerateTcpdumpJob(podtracerArgs string, targetPodName string) (*batchv1.Job, error) {
+func (r *TcpdumpReconciler) GenerateTcpdumpArgs(interfaceName string, packetCount int64, fileSize int64, pcapFilePath string) (string, error) {
+
+	var tcpdumpArgs string
+	var tcpdumpArgList []string
+
+	if packetCount != 0 {
+		tcpdumpArgList = append(tcpdumpArgList, "-i")
+		tcpdumpArgList = append(tcpdumpArgList, interfaceName)
+		tcpdumpArgList = append(tcpdumpArgList, "-c")
+		tcpdumpArgList = append(tcpdumpArgList, string(packetCount))
+		tcpdumpArgList = append(tcpdumpArgList, "-w")
+		tcpdumpArgList = append(tcpdumpArgList, pcapFilePath)
+
+	} else {
+		tcpdumpArgList = append(tcpdumpArgList, "-i")
+		tcpdumpArgList = append(tcpdumpArgList, interfaceName)
+		tcpdumpArgList = append(tcpdumpArgList, "-C")
+		tcpdumpArgList = append(tcpdumpArgList, string(fileSize))
+		tcpdumpArgList = append(tcpdumpArgList, "-w")
+		tcpdumpArgList = append(tcpdumpArgList, pcapFilePath)
+		tcpdumpArgList = append(tcpdumpArgList, "--pod")
+	}
+
+	tcpdumpArgs = strings.Join(tcpdumpArgList, " ")
+
+	return tcpdumpArgs, nil
+}
+
+func (r *TcpdumpReconciler) GenerateTcpdumpJob(podtracerArgsList []string, targetPodName string) (*batchv1.Job, error) {
 
 	var job *batchv1.Job
 
 	var jobObjectMeta metav1.ObjectMeta
 	var jobPodTemplate corev1.PodTemplateSpec
 	var jobSpec batchv1.JobSpec
+	var privileged bool
+
+	privileged = true
 
 	// TODO: improve the labeling system to identify jobs running
 	jobObjectMeta = metav1.ObjectMeta{
@@ -172,8 +179,25 @@ func (r *TcpdumpReconciler) GenerateTcpdumpJob(podtracerArgs string, targetPodNa
 	}
 
 	jobPodTemplate = corev1.PodTemplateSpec{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels: map[string]string{"app": "go-remote"},
+		},
 		Spec: corev1.PodSpec{
-			// TODO: copy spec from goremote at first
+			ServiceAccountName: serviceAccountName,
+			Containers: []corev1.Container{
+				{
+					Name:            "podtracer",
+					Image:           podtracerImage,
+					ImagePullPolicy: corev1.PullAlways,
+					Command:         []string{"podtracer"},
+					Args:            podtracerArgsList,
+					SecurityContext: &corev1.SecurityContext{
+						Privileged: &privileged,
+					},
+					VolumeMounts: goRemote.Spec.VolumeMounts,
+				},
+			},
+			Volumes: goRemote.Spec.Volumes,
 		},
 	}
 
