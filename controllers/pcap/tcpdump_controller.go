@@ -66,32 +66,49 @@ func (r *TcpdumpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	podlist, err := r.GetRunningPodsByLabel(tcpdump.Spec.PodLabel, tcpdump.Spec.TargetNamespace)
 	if err != nil {
-		fmt.Printf(err.Error())
+		fmt.Println(err.Error())
 		return ctrl.Result{Requeue: true}, err
 	}
 
+	var tcpdumpArgs string
 	for _, pod := range podlist.Items {
 
-		// GeneratePodtracerArgs with packetCount
+		// Generate tcpdump args with packetCount
 		if tcpdump.Spec.PacketCount != 0 {
 
-			podtracerArgs, err := r.GeneratePodtracerArgs(tcpdump.Spec.InterfaceName, tcpdump.Spec.PacketCount, 0, tcpdump.Spec.PcapFilePath, pod.ObjectMeta.Name, tcpdump.Spec.TargetNamespace)
+			tcpdumpArgs, err = r.GenerateTcpdumpArgs(tcpdump.Spec.InterfaceName, tcpdump.Spec.PacketCount, 0, tcpdump.Spec.PcapFilePath)
 			if err != nil {
-				fmt.Printf(err.Error())
+				fmt.Println(err.Error())
 				return ctrl.Result{}, err
 			}
 
-		} else { // GeneratePodtracerArgs with fileSize
+		} else { // Generate tcpdump args with fileSize
 
-			podtracerArgs, err = r.GeneratePodtracerArgs(tcpdump.Spec.InterfaceName, 0, tcpdump.Spec.FileSize, tcpdump.Spec.PcapFilePath, pod.ObjectMeta.Name, tcpdump.Spec.TargetNamespace)
+			tcpdumpArgs, err = r.GenerateTcpdumpArgs(tcpdump.Spec.InterfaceName, 0, tcpdump.Spec.FileSize, tcpdump.Spec.PcapFilePath)
 			if err != nil {
-				fmt.Printf(err.Error())
+				fmt.Println(err.Error())
 				return ctrl.Result{}, err
 			}
 		}
 
-		// GenerateTcpdumpJob
+		podtracerArgs, err := r.GeneratePodtracerArgs("tcpdump", tcpdumpArgs, pod.ObjectMeta.Name, tcpdump.Spec.TargetNamespace)
+		if err != nil {
+			fmt.Println(err.Error())
+			return ctrl.Result{}, err
+		}
 
+		// GenerateTcpdumpJob
+		job, err := r.GenerateTcpdumpJob(podtracerArgs, pod.ObjectMeta.Name, pod.Spec.NodeName)
+		if err != nil {
+			fmt.Println(err.Error())
+			return ctrl.Result{}, err
+		}
+		// Create Job
+		err = r.Client.Create(context.Background(), job)
+		if err != nil {
+			fmt.Println(err.Error())
+			return ctrl.Result{}, err
+		}
 		// UpdateStatusOnCR
 
 		// VerifyPcapFileAfterCompletion
@@ -140,7 +157,7 @@ func (r *TcpdumpReconciler) GenerateTcpdumpArgs(interfaceName string, packetCoun
 		tcpdumpArgList = append(tcpdumpArgList, "-i")
 		tcpdumpArgList = append(tcpdumpArgList, interfaceName)
 		tcpdumpArgList = append(tcpdumpArgList, "-c")
-		tcpdumpArgList = append(tcpdumpArgList, string(packetCount))
+		tcpdumpArgList = append(tcpdumpArgList, fmt.Sprint(packetCount))
 		tcpdumpArgList = append(tcpdumpArgList, "-w")
 		tcpdumpArgList = append(tcpdumpArgList, pcapFilePath)
 
@@ -148,7 +165,7 @@ func (r *TcpdumpReconciler) GenerateTcpdumpArgs(interfaceName string, packetCoun
 		tcpdumpArgList = append(tcpdumpArgList, "-i")
 		tcpdumpArgList = append(tcpdumpArgList, interfaceName)
 		tcpdumpArgList = append(tcpdumpArgList, "-C")
-		tcpdumpArgList = append(tcpdumpArgList, string(fileSize))
+		tcpdumpArgList = append(tcpdumpArgList, fmt.Sprint(fileSize))
 		tcpdumpArgList = append(tcpdumpArgList, "-w")
 		tcpdumpArgList = append(tcpdumpArgList, pcapFilePath)
 		tcpdumpArgList = append(tcpdumpArgList, "--pod")
@@ -159,13 +176,12 @@ func (r *TcpdumpReconciler) GenerateTcpdumpArgs(interfaceName string, packetCoun
 	return tcpdumpArgs, nil
 }
 
-func (r *TcpdumpReconciler) GenerateTcpdumpJob(podtracerArgsList []string, targetPodName string) (*batchv1.Job, error) {
+func (r *TcpdumpReconciler) GenerateTcpdumpJob(podtracerArgsList []string, targetPodName string, targetNodeName string) (*batchv1.Job, error) {
 
 	var job *batchv1.Job
 
 	var jobObjectMeta metav1.ObjectMeta
 	var jobPodTemplate corev1.PodTemplateSpec
-	var jobSpec batchv1.JobSpec
 	var privileged bool
 	var HostPathDirectory corev1.HostPathType
 	var HostPathSocket corev1.HostPathType
@@ -188,6 +204,7 @@ func (r *TcpdumpReconciler) GenerateTcpdumpJob(podtracerArgsList []string, targe
 			Labels: map[string]string{"app": "go-remote"},
 		},
 		Spec: corev1.PodSpec{
+			NodeName:           targetNodeName,
 			ServiceAccountName: serviceAccountName,
 			Containers: []corev1.Container{
 				{
@@ -231,9 +248,12 @@ func (r *TcpdumpReconciler) GenerateTcpdumpJob(podtracerArgsList []string, targe
 		},
 	}
 
-	jobSpec = batchv1.JobSpec{}
-
-	// err = r.Client.Create(context.Background(), job)
+	job = &batchv1.Job{
+		ObjectMeta: jobObjectMeta,
+		Spec: batchv1.JobSpec{
+			Template: jobPodTemplate,
+		},
+	}
 
 	return job, nil
 }
