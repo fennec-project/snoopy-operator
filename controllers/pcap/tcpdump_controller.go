@@ -52,7 +52,7 @@ func (r *TcpdumpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	_ = log.FromContext(ctx)
 
 	tcpdump := &pcapv1alpha1.Tcpdump{}
-	err := r.Client.Get(context.Background(), req.NamespacedName, tcpdump)
+	err := r.Client.Get(ctx, req.NamespacedName, tcpdump)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -63,8 +63,8 @@ func (r *TcpdumpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		fmt.Printf("tcpdump %s is running or already done.", tcpdump.ObjectMeta.Name)
 		return ctrl.Result{}, nil
 	}
-
-	podlist, err := r.GetRunningPodsByLabel(tcpdump.Spec.PodLabel, tcpdump.Spec.TargetNamespace)
+	println(tcpdump.Spec.PodLabel)
+	podlist, err := r.GetRunningPodsByLabel(ctx, tcpdump.Spec.PodLabel, tcpdump.Spec.TargetNamespace)
 	if err != nil {
 		fmt.Println(err.Error())
 		return ctrl.Result{Requeue: true}, err
@@ -118,12 +118,18 @@ func (r *TcpdumpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	return ctrl.Result{}, nil
 }
 
-func (r *TcpdumpReconciler) GetRunningPodsByLabel(label map[string]string, namespace string) (*corev1.PodList, error) {
+func (r *TcpdumpReconciler) GetRunningPodsByLabel(ctx context.Context, label map[string]string, namespace string) (*corev1.PodList, error) {
 
-	var podlist *corev1.PodList
-	err := r.Client.List(context.Background(), podlist, client.MatchingLabels(label), client.InNamespace(namespace), client.MatchingFields{"Status.Phase": "Running"})
+	podlist := &corev1.PodList{}
+	listOpts := []client.ListOption{
+		client.MatchingLabels(label),
+		client.InNamespace(namespace),
+		// client.MatchingFields{"phase": "Running"}, // TODO: TSHOOT contantly returning status.phase doesn't exist...
+	}
+
+	err := r.Client.List(ctx, podlist, listOpts...)
 	if err != nil {
-		fmt.Printf("GetRunningPodsByLabel, Error listing pods for tcpdump %s ", err.Error())
+		fmt.Printf("GetRunningPodsByLabel, Error listing pods for tcpdump: %s ", err.Error())
 		return nil, err
 	}
 
@@ -139,6 +145,7 @@ func (r *TcpdumpReconciler) GeneratePodtracerArgs(command string, args string, t
 	var podtracerArgsList []string
 
 	podtracerArgsList = append(podtracerArgsList, command)
+	podtracerArgsList = append(podtracerArgsList, "-a")
 	podtracerArgsList = append(podtracerArgsList, args)
 	podtracerArgsList = append(podtracerArgsList, "--pod")
 	podtracerArgsList = append(podtracerArgsList, targetPodName)
@@ -211,7 +218,7 @@ func (r *TcpdumpReconciler) GenerateTcpdumpJob(podtracerArgsList []string, targe
 					Name:            "podtracer",
 					Image:           podtracerImage,
 					ImagePullPolicy: corev1.PullAlways,
-					Command:         []string{"podtracer"},
+					Command:         []string{"/usr/bin/podtracer"},
 					Args:            podtracerArgsList,
 					SecurityContext: &corev1.SecurityContext{
 						Privileged: &privileged,
