@@ -91,7 +91,7 @@ func (r *TcpdumpReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			}
 		}
 
-		podtracerArgs, err := r.GeneratePodtracerArgs("tcpdump", tcpdumpArgs, pod.ObjectMeta.Name, tcpdump.Spec.TargetNamespace)
+		podtracerArgs, err := r.GeneratePodtracerArgs("run", tcpdumpArgs, pod.ObjectMeta.Name, tcpdump.Spec.TargetNamespace)
 		if err != nil {
 			fmt.Println(err.Error())
 			return ctrl.Result{}, err
@@ -145,6 +145,7 @@ func (r *TcpdumpReconciler) GeneratePodtracerArgs(command string, args string, t
 	var podtracerArgsList []string
 
 	podtracerArgsList = append(podtracerArgsList, command)
+	podtracerArgsList = append(podtracerArgsList, "tcpdump")
 	podtracerArgsList = append(podtracerArgsList, "-a")
 	podtracerArgsList = append(podtracerArgsList, args)
 	podtracerArgsList = append(podtracerArgsList, "--pod")
@@ -165,16 +166,16 @@ func (r *TcpdumpReconciler) GenerateTcpdumpArgs(interfaceName string, packetCoun
 		tcpdumpArgList = append(tcpdumpArgList, interfaceName)
 		tcpdumpArgList = append(tcpdumpArgList, "-c")
 		tcpdumpArgList = append(tcpdumpArgList, fmt.Sprint(packetCount))
-		tcpdumpArgList = append(tcpdumpArgList, "-w")
-		tcpdumpArgList = append(tcpdumpArgList, pcapFilePath)
+		// tcpdumpArgList = append(tcpdumpArgList, "-w")
+		// tcpdumpArgList = append(tcpdumpArgList, pcapFilePath)
 
 	} else {
 		tcpdumpArgList = append(tcpdumpArgList, "-i")
 		tcpdumpArgList = append(tcpdumpArgList, interfaceName)
 		tcpdumpArgList = append(tcpdumpArgList, "-C")
 		tcpdumpArgList = append(tcpdumpArgList, fmt.Sprint(fileSize))
-		tcpdumpArgList = append(tcpdumpArgList, "-w")
-		tcpdumpArgList = append(tcpdumpArgList, pcapFilePath)
+		// tcpdumpArgList = append(tcpdumpArgList, "-w")
+		// tcpdumpArgList = append(tcpdumpArgList, pcapFilePath)
 		tcpdumpArgList = append(tcpdumpArgList, "--pod")
 	}
 
@@ -200,10 +201,11 @@ func (r *TcpdumpReconciler) GenerateTcpdumpJob(podtracerArgsList []string, targe
 
 	// TODO: improve the labeling system to identify jobs running
 	jobObjectMeta = metav1.ObjectMeta{
-		Name: "tcpdumpJobForPod-" + targetPodName,
+		Name: "tcpdump-" + targetPodName,
 		Labels: map[string]string{
 			"tcpdumpJob": "snoopy-operator",
 		},
+		Namespace: "snoopy-operator",
 	}
 
 	jobPodTemplate = corev1.PodTemplateSpec{
@@ -213,6 +215,7 @@ func (r *TcpdumpReconciler) GenerateTcpdumpJob(podtracerArgsList []string, targe
 		Spec: corev1.PodSpec{
 			NodeName:           targetNodeName,
 			ServiceAccountName: serviceAccountName,
+			RestartPolicy:      "Never",
 			Containers: []corev1.Container{
 				{
 					Name:            "podtracer",
@@ -229,6 +232,9 @@ func (r *TcpdumpReconciler) GenerateTcpdumpJob(podtracerArgsList []string, targe
 							ReadOnly:  false},
 						{Name: "crio-sock",
 							MountPath: "/var/run/crio/crio.sock",
+							ReadOnly:  false},
+						{Name: "pcap-data",
+							MountPath: "/pcap-data",
 							ReadOnly:  false},
 					},
 				},
@@ -249,6 +255,12 @@ func (r *TcpdumpReconciler) GenerateTcpdumpJob(podtracerArgsList []string, targe
 							Path: "/var/run/crio/crio.sock",
 							Type: &HostPathSocket,
 						},
+					},
+				},
+				{
+					Name: "pcap-data",
+					VolumeSource: corev1.VolumeSource{
+						EmptyDir: &corev1.EmptyDirVolumeSource{},
 					},
 				},
 			},

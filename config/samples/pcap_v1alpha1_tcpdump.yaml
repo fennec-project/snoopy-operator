@@ -9,6 +9,6 @@ spec:
     podNetworkConfig: podnetwork-sample-a,
     }
   interfaceName: eth0
-  packetCount: 100
+  packetCount: 10
   pcapFilePath: /pcap-data/test.pcap
 
