@@ -36,16 +36,31 @@ spec:
           spec:
             description: TcpdumpSpec defines the desired state of Tcpdump
             properties:
-              duration:
-                description: Duration packet capture duration in minutes
+              fileSize:
+                description: Equivalent to tcpdump -C (upper case) parameter
+                format: int64
                 type: integer
-              ifName:
+              interfaceName:
                 description: Network virtual interface or link name on the pod to
                   run tcpdump on
                 type: string
-              podName:
-                description: Target pod where the tcpdump command will get packets
-                  from
+              name:
+                description: tcpdump profile name to be applied to a set of pods
+                type: string
+              packetCount:
+                description: Equivalent to tcpdump -c parameter
+                format: int64
+                type: integer
+              pcapFilePath:
+                description: Equivalent to -w tcpdump parameter
+                type: string
+              podLabel:
+                additionalProperties:
+                  type: string
+                description: Label to identify the target pods
+                type: object
+              targetNamespace:
+                description: Namespace where the target pods live
                 type: string
             type: object
           status:

@@ -3,7 +3,12 @@ kind: Tcpdump
 metadata:
   name: tcpdump-sample
 spec:
+  name: test-pcap
+  targetNamespace: cnf-telco
+  podLabel: { 
+    podNetworkConfig: podnetwork-sample-a,
+    }
+  interfaceName: eth0
+  packetCount: 10
+  pcapFilePath: /pcap-data/test.pcap
 
-  podName: cnf-example-a-7cdb5b9fff-knrk9
-  ifName: eth0
-  duration: 1
