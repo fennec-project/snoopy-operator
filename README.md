@@ -269,9 +269,13 @@ listening on eth0, link-type EN10MB (Ethernet), capture size 262144 bytes
 0 packets dropped by kernel
 
 ```
-The jobs will be created on the snoopy-operator namespace but run on the nodes where the pods are in order to tap into their network interfaces. By running `kubectl get jobs -n snoopy-operator` we should be able to see a list of jobs.
 
-The same way, by running `kubectl get pods -n snoopy-operator` we should be able to see not only the snoopy-operator pod but also the Job's pods which will hold in their logs the output of tcpdump for each pod targeted in that packet capture.
+#### Conclusion:
+
+From a different node snoopy-operator creates as many jobs as necessary to tap into as many pods as needed in no matter what node they are and log the tcpdump packet capture on the tcpdump pods created by those jobs.
+
+The next step on this project is to create and implement a data pipeline to receive not only packet from tcpdump but many other kinds of data retrieved by using other tools than tcpdump itself.
+
 
 # What comes next after the PoC
 
