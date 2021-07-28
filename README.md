@@ -172,8 +172,8 @@ Let's try our CR on the cnf-telco namespace as if it was a request from the CNF 
 kubectl get jobs -n snoopy-operator
 
 NAME                                      COMPLETIONS   DURATION   AGE
-tcpdump-cnf-example-pod-98b9d4df8-gmhx8   0/1           2m13s      2m13s
-tcpdump-cnf-example-pod-98b9d4df8-p6qkn   0/1           2m13s      2m13s
+tcpdump-cnf-example-pod-98b9d4df8-gmhx8   0/1           32s        32s
+tcpdump-cnf-example-pod-98b9d4df8-p6qkn   0/1           32s        32s
 ```
 
 
@@ -181,17 +181,94 @@ tcpdump-cnf-example-pod-98b9d4df8-p6qkn   0/1           2m13s      2m13s
 
 ```
 kubectl get pods -n snoopy-operator | grep tcpdump
-tcpdump-cnf-example-pod-98b9d4df8-gmhx8-s75pw   0/1     Completed   0          4m1s
-tcpdump-cnf-example-pod-98b9d4df8-p6qkn-q945h   1/1     Running     0          4m1s
+tcpdump-cnf-example-pod-98b9d4df8-gmhx8-hnsgk   1/1     Running   0          67s
+tcpdump-cnf-example-pod-98b9d4df8-p6qkn-cqlkf   1/1     Running   0          67s
 ```
 
 #### 10 - Checking the 50 packets captured by the Job
 
+In one terminal run:
 ```
+watch "kubectl logs tcpdump-cnf-example-pod-98b9d4df8-gmhx8-hnsgk -n snoopy-operator"                                                         
+
+I0728 21:23:15.605664       1 request.go:668] Waited for 1.037439443s due to client-side throttling, not priority and fairness, request: GET:https://172.30.0.1:443/apis/apiextensions.k8s.io/v1?timeout=32s
+Connected with CRI-O at unix:///var/run/crio/crio.sock
+```
+In another terminal let's actually send some packets:
+```
+kubectl exec -it cnf-example-pod-98b9d4df8-gmhx8 -n cnf-telco -- /bin/bash
+
+bash-5.1$ ping 10.128.3.239
+PING 10.128.3.239 (10.128.3.239) 56(84) bytes of data.
+64 bytes from 10.128.3.239: icmp_seq=1 ttl=64 time=0.528 ms
+64 bytes from 10.128.3.239: icmp_seq=2 ttl=64 time=0.044 ms
+64 bytes from 10.128.3.239: icmp_seq=3 ttl=64 time=0.046 ms
+64 bytes from 10.128.3.239: icmp_seq=4 ttl=64 time=0.071 ms
+```
+Let the ping run and observe the watch in the other terminal:
 
 ```
+I0728 21:23:15.605664       1 request.go:668] Waited for 1.037439443s due to client-side throttling, not priority and fairness, request: GET:https://172.30.0.1:443/apis/apiextensions.k8s.io/v1?timeout=32s
+Connected with CRI-O at unix:///var/run/crio/crio.sock
+Stdout: 21:27:33.409551 ARP, Request who-has ip-10-128-3-239.ca-central-1.compute.internal tell ip-10-128-3-238.ca-central-1.compute.internal, length 28
+21:27:33.409801 ARP, Reply ip-10-128-3-239.ca-central-1.compute.internal is-at 0a:58:0a:80:03:ef (oui Unknown), length 28
+21:27:33.409806 IP ip-10-128-3-238.ca-central-1.compute.internal > ip-10-128-3-239.ca-central-1.compute.internal: ICMP echo request, id 7, seq 1, length 64
+21:27:33.410058 IP ip-10-128-3-239.ca-central-1.compute.internal > ip-10-128-3-238.ca-central-1.compute.internal: ICMP echo reply, id 7, seq 1, length 64
+21:27:33.411525 IP ip-10-128-3-238.ca-central-1.compute.internal.50396 > dns-default.openshift-dns.svc.cluster.local.domain: 15469+ PTR? 239.3.128.10.in-addr.arpa. (43)
+21:27:33.412056 IP dns-default.openshift-dns.svc.cluster.local.domain > ip-10-128-3-238.ca-central-1.compute.internal.50396: 15469* 1/0/1 PTR ip-10-128-3-239.ca-central-1.compute.internal. (138)
+21:27:33.412187 IP ip-10-128-3-238.ca-central-1.compute.internal.40401 > dns-default.openshift-dns.svc.cluster.local.domain: 24112+ PTR? 238.3.128.10.in-addr.arpa. (43)
+21:27:33.413556 IP dns-default.openshift-dns.svc.cluster.local.domain > ip-10-128-3-238.ca-central-1.compute.internal.40401: 24112 1/0/1 PTR ip-10-128-3-238.ca-central-1.compute.internal. (138)
+21:27:34.435156 IP ip-10-128-3-238.ca-central-1.compute.internal.45045 > dns-default.openshift-dns.svc.cluster.local.domain: 56869+ PTR? 10.0.30.172.in-addr.arpa. (42)
+21:27:34.435253 IP ip-10-128-3-238.ca-central-1.compute.internal > ip-10-128-3-239.ca-central-1.compute.internal: ICMP echo request, id 7, seq 2, length 64
+21:27:34.435284 IP ip-10-128-3-239.ca-central-1.compute.internal > ip-10-128-3-238.ca-central-1.compute.internal: ICMP echo reply, id 7, seq 2, length 64
+21:27:34.435391 IP dns-default.openshift-dns.svc.cluster.local.domain > ip-10-128-3-238.ca-central-1.compute.internal.45045: 56869*- 1/0/1 PTR dns-default.openshift-dns.svc.cluster.local. (134)
+21:27:35.459056 IP ip-10-128-3-238.ca-central-1.compute.internal > ip-10-128-3-239.ca-central-1.compute.internal: ICMP echo request, id 7, seq 3, length 64
+21:27:35.459085 IP ip-10-128-3-239.ca-central-1.compute.internal > ip-10-128-3-238.ca-central-1.compute.internal: ICMP echo reply, id 7, seq 3, length 64
+21:27:36.483078 IP ip-10-128-3-238.ca-central-1.compute.internal > ip-10-128-3-239.ca-central-1.compute.internal: ICMP echo request, id 7, seq 4, length 64
+21:27:36.483123 IP ip-10-128-3-239.ca-central-1.compute.internal > ip-10-128-3-238.ca-central-1.compute.internal: ICMP echo reply, id 7, seq 4, length 64
+21:27:37.507097 IP ip-10-128-3-238.ca-central-1.compute.internal > ip-10-128-3-239.ca-central-1.compute.internal: ICMP echo request, id 7, seq 5, length 64
+21:27:37.507146 IP ip-10-128-3-239.ca-central-1.compute.internal > ip-10-128-3-238.ca-central-1.compute.internal: ICMP echo reply, id 7, seq 5, length 64
+21:27:38.467029 ARP, Request who-has ip-10-128-2-1.ca-central-1.compute.internal tell ip-10-128-3-238.ca-central-1.compute.internal, length 28
+21:27:38.467098 ARP, Request who-has ip-10-128-3-238.ca-central-1.compute.internal tell ip-10-128-3-239.ca-central-1.compute.internal, length 28
+21:27:38.467168 ARP, Reply ip-10-128-3-238.ca-central-1.compute.internal is-at 0a:58:0a:80:03:ee (oui Unknown), length 28
+21:27:38.467379 ARP, Request who-has ip-10-128-3-238.ca-central-1.compute.internal tell 10-128-2-2.dns-default.openshift-dns.svc.cluster.local, length 28
+21:27:38.467384 ARP, Reply ip-10-128-3-238.ca-central-1.compute.internal is-at 0a:58:0a:80:03:ee (oui Unknown), length 28
+21:27:38.467472 ARP, Reply ip-10-128-2-1.ca-central-1.compute.internal is-at be:71:27:ef:10:7e (oui Unknown), length 28
+21:27:38.531068 IP ip-10-128-3-238.ca-central-1.compute.internal > ip-10-128-3-239.ca-central-1.compute.internal: ICMP echo request, id 7, seq 6, length 64
+21:27:38.531120 IP ip-10-128-3-239.ca-central-1.compute.internal > ip-10-128-3-238.ca-central-1.compute.internal: ICMP echo reply, id 7, seq 6, length 64
+21:27:38.532156 IP ip-10-128-3-238.ca-central-1.compute.internal.53631 > dns-default.openshift-dns.svc.cluster.local.domain: 64620+ PTR? 1.2.128.10.in-addr.arpa. (41)
+21:27:38.533315 IP dns-default.openshift-dns.svc.cluster.local.domain > ip-10-128-3-238.ca-central-1.compute.internal.53631: 64620 1/0/1 PTR ip-10-128-2-1.ca-central-1.compute.internal. (132)
+21:27:38.533493 IP ip-10-128-3-238.ca-central-1.compute.internal.36275 > dns-default.openshift-dns.svc.cluster.local.domain: 11986+ PTR? 2.2.128.10.in-addr.arpa. (41)
+21:27:38.533667 IP dns-default.openshift-dns.svc.cluster.local.domain > ip-10-128-3-238.ca-central-1.compute.internal.36275: 11986*- 1/0/1 PTR 10-128-2-2.dns-default.openshift-dns.svc.cluster.local. (143)
+21:27:39.556064 IP ip-10-128-3-238.ca-central-1.compute.internal > ip-10-128-3-239.ca-central-1.compute.internal: ICMP echo request, id 7, seq 7, length 64
+21:27:39.556110 IP ip-10-128-3-239.ca-central-1.compute.internal > ip-10-128-3-238.ca-central-1.compute.internal: ICMP echo reply, id 7, seq 7, length 64
+21:27:40.580053 IP ip-10-128-3-238.ca-central-1.compute.internal > ip-10-128-3-239.ca-central-1.compute.internal: ICMP echo request, id 7, seq 8, length 64
+21:27:40.580093 IP ip-10-128-3-239.ca-central-1.compute.internal > ip-10-128-3-238.ca-central-1.compute.internal: ICMP echo reply, id 7, seq 8, length 64
+21:27:41.604085 IP ip-10-128-3-238.ca-central-1.compute.internal > ip-10-128-3-239.ca-central-1.compute.internal: ICMP echo request, id 7, seq 9, length 64
+21:27:41.604127 IP ip-10-128-3-239.ca-central-1.compute.internal > ip-10-128-3-238.ca-central-1.compute.internal: ICMP echo reply, id 7, seq 9, length 64
+21:27:42.627079 IP ip-10-128-3-238.ca-central-1.compute.internal > ip-10-128-3-239.ca-central-1.compute.internal: ICMP echo request, id 7, seq 10, length 64
+21:27:42.627109 IP ip-10-128-3-239.ca-central-1.compute.internal > ip-10-128-3-238.ca-central-1.compute.internal: ICMP echo reply, id 7, seq 10, length 64
+21:27:43.651110 IP ip-10-128-3-238.ca-central-1.compute.internal > ip-10-128-3-239.ca-central-1.compute.internal: ICMP echo request, id 7, seq 11, length 64
+21:27:43.651153 IP ip-10-128-3-239.ca-central-1.compute.internal > ip-10-128-3-238.ca-central-1.compute.internal: ICMP echo reply, id 7, seq 11, length 64
+21:27:44.675064 IP ip-10-128-3-238.ca-central-1.compute.internal > ip-10-128-3-239.ca-central-1.compute.internal: ICMP echo request, id 7, seq 12, length 64
+21:27:44.675105 IP ip-10-128-3-239.ca-central-1.compute.internal > ip-10-128-3-238.ca-central-1.compute.internal: ICMP echo reply, id 7, seq 12, length 64
+21:27:45.699060 IP ip-10-128-3-238.ca-central-1.compute.internal > ip-10-128-3-239.ca-central-1.compute.internal: ICMP echo request, id 7, seq 13, length 64
+21:27:45.699105 IP ip-10-128-3-239.ca-central-1.compute.internal > ip-10-128-3-238.ca-central-1.compute.internal: ICMP echo reply, id 7, seq 13, length 64
+21:27:46.723097 IP ip-10-128-3-238.ca-central-1.compute.internal > ip-10-128-3-239.ca-central-1.compute.internal: ICMP echo request, id 7, seq 14, length 64
+21:27:46.723141 IP ip-10-128-3-239.ca-central-1.compute.internal > ip-10-128-3-238.ca-central-1.compute.internal: ICMP echo reply, id 7, seq 14, length 64
+21:27:47.747076 IP ip-10-128-3-238.ca-central-1.compute.internal > ip-10-128-3-239.ca-central-1.compute.internal: ICMP echo request, id 7, seq 15, length 64
+21:27:47.747116 IP ip-10-128-3-239.ca-central-1.compute.internal > ip-10-128-3-238.ca-central-1.compute.internal: ICMP echo reply, id 7, seq 15, length 64
+21:27:48.771069 IP ip-10-128-3-238.ca-central-1.compute.internal > ip-10-128-3-239.ca-central-1.compute.internal: ICMP echo request, id 7, seq 16, length 64
+21:27:48.771105 IP ip-10-128-3-239.ca-central-1.compute.internal > ip-10-128-3-238.ca-central-1.compute.internal: ICMP echo reply, id 7, seq 16, length 64
 
+ Stderr: dropped privs to tcpdump
+tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
+listening on eth0, link-type EN10MB (Ethernet), capture size 262144 bytes
+50 packets captured
+52 packets received by filter
+0 packets dropped by kernel
 
+```
 The jobs will be created on the snoopy-operator namespace but run on the nodes where the pods are in order to tap into their network interfaces. By running `kubectl get jobs -n snoopy-operator` we should be able to see a list of jobs.
 
 The same way, by running `kubectl get pods -n snoopy-operator` we should be able to see not only the snoopy-operator pod but also the Job's pods which will hold in their logs the output of tcpdump for each pod targeted in that packet capture.
