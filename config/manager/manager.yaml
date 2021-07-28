@@ -2,25 +2,25 @@ apiVersion: v1
 kind: Namespace
 metadata:
   labels:
-    control-plane: controller-manager
-  name: system
+    control-plane: snoopy-operator
+  name: snoopy-operator
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: controller-manager
-  namespace: system
+  name: snoopy-operator
+  namespace: snoopy-operator
   labels:
-    control-plane: controller-manager
+    control-plane: snoopy-operator
 spec:
   selector:
     matchLabels:
-      control-plane: controller-manager
+      control-plane: snoopy-operator
   replicas: 1
   template:
     metadata:
       labels:
-        control-plane: controller-manager
+        control-plane: snoopy-operator
     spec:
       securityContext:
         runAsNonRoot: true
@@ -30,7 +30,7 @@ spec:
         args:
         - --leader-elect
         image: controller:latest
-        name: manager
+        name: snoopy-operator
         securityContext:
           allowPrivilegeEscalation: false
         livenessProbe:
@@ -52,5 +52,5 @@ spec:
           requests:
             cpu: 100m
             memory: 20Mi
-      serviceAccountName: controller-manager
+      serviceAccountName: snoopy-operator-sa
       terminationGracePeriodSeconds: 10
