@@ -5,7 +5,6 @@ kind: ClusterRole
 metadata:
   creationTimestamp: null
   name: snoopy-operator-role
-  namespace: snoopy-operator
 rules:
 - apiGroups:
   - pcap.fennecproject.io
