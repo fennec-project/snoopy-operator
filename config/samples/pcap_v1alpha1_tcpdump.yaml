@@ -6,9 +6,9 @@ spec:
   name: test-pcap
   targetNamespace: cnf-telco
   podLabel: { 
-    podNetworkConfig: podnetwork-sample-a,
+    networkMonitor: "true",
     }
   interfaceName: eth0
-  packetCount: 10
-  pcapFilePath: /pcap-data/test.pcap
+  packetCount: 50
+ 
 

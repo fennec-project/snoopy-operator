@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cnf-telco
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cnf-telco-sa
+  namespace: cnf-telco
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cnf-example-pod
+  namespace: cnf-telco
+  labels:
+    networkMonitor: "true"
+spec:
+  selector:
+    matchLabels:
+      networkMonitor: "true"
+  replicas: 2
+  template:
+    metadata:
+      name: cnf-example-pod
+      namespace: cnf-telco
+      labels:
+        networkMonitor: "true"
+    spec:
+      serviceAccountName: cnf-telco-sa
+      containers:
+      - command:
+        - /bin/bash 
+        - -c 
+        - --
+        args:
+        - "while true; do sleep 30; done;"
+        image: "nicolaka/netshoot:latest"
+        imagePullPolicy: Always
+        name: cnf-example
+      nodeSelector:
+        cnf-telco: "true"        
