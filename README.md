@@ -1,6 +1,8 @@
 # snoopy-operator
 
-### A Networking Packet Capture and Flow Analysis Operator
+---
+
+### A Cloud Native Way for Pod Deep Inspection
 
 How can we get packet captures, network flow information or monitor deeply network communications in multiple pods at the same time and have all that information centralized? How can we troubleshoot certain network performance related issues having the "view" of a pod instead? As if we can see the packets before an external encryption occurs? What if we need to check certain destinations or sessions or connections success rate from pod to pod or from pod to external services?
 
@@ -8,18 +10,22 @@ I'm pretty sure a bunch of tools come up to mind when talking about those challe
 
 That's the motivation behind the snoopy-operator. Snoopy, for short, manages multiple jobs running special tools against selected or labeled pods across multiple nodes collecting valuable information without changing the pod's object or affecting the pod's cpu budget for example.
 
-In order to achieve it's results it makes use of [podtracer](https://github.com/fennec-project/podtracer) a utility that makes incredibly easy running all those mentioned tools and many others targeting pods and, more specifically, containers inside those pods. By using podtracer instances as Scheduled Job instances many vital pieces of information can be captured and transferred to a central location.
+### Architecture In a Nutshell
 
-# Road Map
+In order to achieve it's results it makes use of [podtracer](https://github.com/fennec-project/podtracer) a utility that makes incredibly easy running all those mentioned tools and many others targeting pods and, more specifically, containers inside those pods. By using podtracer instances as Scheduled Job instances many vital pieces of information can be captured and transferred to a central location from many different nodes at the same time.
 
-At this moment snoopy-operator can run the jobs with podtracer and use tcpdump as jobs logging out packets. Both pieces of software must evolve to include other troubleshooting, monitoring and deep inspection tools. Among many desired features we highlight a few that are part of our commuity discussions below:
+<img src='docs/img/snoopy-operator.png'></img>
 
-- Centralizing data on a Kafka topic to be consumed by specialized processes as part of a data processing pipeline.
+### Road Map
+
+At this moment snoopy-operator can run the jobs with podtracer and use tcpdump as jobs logging out packets. Both pieces of software must evolve to include other troubleshooting, monitoring and deep inspection tools. Among many desired features we highlight a few that are part of our community discussions below:
+
+- Send the retrieved data to a central server (Kafka for ex.) to be consumed by specialized processes as part of a data processing pipeline.
 - Including tools like iperf to run specialized performance tests at scale.
 - Including eBPF filters for security monitoring.
 - The creation of a data pipeline and dashboard to analyze and publish results.
 
-# Running the PoC
+### Running the PoC
 
 A very simple PoC was created to allow people to understand what happens under the hood of this operator and here is how you can try it:
 
@@ -277,11 +283,11 @@ From a different node snoopy-operator creates as many jobs as necessary to tap i
 The next step on this project is to create and implement a data pipeline to receive not only packet from tcpdump but many other kinds of data retrieved by using other tools than tcpdump itself.
 
 
-# What comes next after the PoC
+### What comes next after the PoC
 
 The snoopy-operator APIs may change yet a lot. Tcpdump CRD was a quick way to test the idea. Now we can evolve to a full featured podtracer API as well as more specialized APIs using Tcpdump or other tools. This is all under development at this point.
 
-# Contribution
+### Contribution
 
 Regular meetings, slack channel and YouTube channel coming soon.
 
