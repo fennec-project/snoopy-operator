@@ -54,3 +54,5 @@ spec:
             memory: 20Mi
       serviceAccountName: snoopy-operator-sa
       terminationGracePeriodSeconds: 10
+      nodeSelector:
+        management: "true"
