@@ -55,6 +55,8 @@ SHELL = /usr/bin/env bash -o pipefail
 
 all: build
 
+KUBECONFIG_PATH=$$HOME/.kube/config
+
 ##@ General
 
 # The help target prints out all targets with their descriptions organized
@@ -116,6 +118,7 @@ uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified 
 deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/default | kubectl apply -f -
+	kubectl create secret generic podtracer-kubeconfig --type=string --from-file=${KUBECONFIG_PATH} -n snoopy-operator
 
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config.
 	$(KUSTOMIZE) build config/default | kubectl delete -f -
