@@ -236,6 +236,9 @@ func (r *TcpdumpReconciler) GenerateTcpdumpJob(podtracerArgsList []string, targe
 						{Name: "pcap-data",
 							MountPath: "/pcap-data",
 							ReadOnly:  false},
+						{Name: "kubeconfig",
+							MountPath: "/root/.kube",
+							ReadOnly:  false},
 					},
 				},
 			},
@@ -261,6 +264,14 @@ func (r *TcpdumpReconciler) GenerateTcpdumpJob(podtracerArgsList []string, targe
 					Name: "pcap-data",
 					VolumeSource: corev1.VolumeSource{
 						EmptyDir: &corev1.EmptyDirVolumeSource{},
+					},
+				},
+				{
+					Name: "kubeconfig",
+					VolumeSource: corev1.VolumeSource{
+						Secret: &corev1.SecretVolumeSource{
+							SecretName: "podtracer-kubeconfig",
+						},
 					},
 				},
 			},

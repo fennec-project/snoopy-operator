@@ -1,19 +1,19 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: cnf-test
+  name: cnf-telco
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: cnf-telco-sa
-  namespace: cnf-test
+  namespace: cnf-telco
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cnf-example-pod
-  namespace: cnf-test
+  namespace: cnf-telco
   labels:
     networkMonitor: "true"
 spec:
@@ -24,7 +24,7 @@ spec:
   template:
     metadata:
       name: cnf-example-pod
-      namespace: cnf-test
+      namespace: cnf-telco
       labels:
         networkMonitor: "true"
     spec:
