@@ -1,0 +1,64 @@
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: snoopy-operator-manager-role
+rules:
+- apiGroups:
+  - '*'
+  resources:
+  - '*'
+  verbs:
+  - '*'
+- apiGroups:
+  - pcap.snoopy-operator.io
+  resources:
+  - tcpdumps
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - pcap.snoopy-operator.io
+  resources:
+  - tcpdumps/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - pcap.snoopy-operator.io
+  resources:
+  - tcpdumps/status
+  verbs:
+  - get
+  - patch
+  - update
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  creationTimestamp: null
+  name: snoopy-operator-manager-role
+  namespace: snoopy-operator
+rules:
+- apiGroups:
+  - apps
+  resources:
+  - daemonsets
+  - deployments
+  - deployments/finalizers
+  - replicasets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch

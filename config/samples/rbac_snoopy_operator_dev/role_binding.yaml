@@ -1,0 +1,25 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: manager-rolebinding-snoopy
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: snoopy-operator-manager-role
+subjects:
+- kind: ServiceAccount
+  name: snoopy-operator-sa
+  namespace: snoopy-operator
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: manager-rolebinding-snoopy
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: snoopy-operator-manager-role
+subjects:
+- kind: ServiceAccount
+  name: snoopy-operator-sa
+  namespace: snoopy-operator
