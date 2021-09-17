@@ -1,0 +1,24 @@
+# permissions for end users to edit commands.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: command-editor-role
+rules:
+- apiGroups:
+  - exec.fennecproject.io
+  resources:
+  - commands
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - exec.fennecproject.io
+  resources:
+  - commands/status
+  verbs:
+  - get

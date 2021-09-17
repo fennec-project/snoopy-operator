@@ -7,6 +7,32 @@ metadata:
   name: snoopy-operator-role
 rules:
 - apiGroups:
+  - exec.fennecproject.io
+  resources:
+  - commands
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - exec.fennecproject.io
+  resources:
+  - commands/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - exec.fennecproject.io
+  resources:
+  - commands/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - pcap.fennecproject.io
   resources:
   - tcpdumps
