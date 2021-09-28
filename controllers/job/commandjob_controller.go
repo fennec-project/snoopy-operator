@@ -18,7 +18,11 @@ package job
 
 import (
 	"context"
+	"fmt"
 
+	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -51,6 +55,12 @@ func (r *CommandJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	// get CommandJobs
 
+	cmd := &jobv1alpha1.CommandJob{}
+	err := r.Client.Get(ctx, req.NamespacedName, cmd)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
 	// Log User Info message about new jobs
 
 	// Log Debug message with full new Command Job values
@@ -61,16 +71,172 @@ func (r *CommandJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	// List Target Pods matching labels on selected namespace
 
-	// Build the command with arguments for podtracer
+	podlist, err := r.GetRunningPodsByLabel(ctx, cmd.Spec.LabelSelector, cmd.Spec.TargetNamespace)
+	if err != nil {
+		fmt.Println(err.Error())
+		return ctrl.Result{Requeue: true}, err
+	}
 
-	// Temporarily listen to messages from podtracer on the operator pod
-	// with nc and write those to file. Get the operator pod's IP and serve on port 5555 for now.
+	for _, pod := range podlist.Items {
 
-	// Generate the Cronjob object
+		// Build the command with arguments for podtracer
 
-	// Create the Job in k8s api
+		podtracerArgs := []string{}
+		podtracerArgs = append(podtracerArgs, "run")
+		podtracerArgs = append(podtracerArgs, cmd.Spec.Command)
+		podtracerArgs = append(podtracerArgs, "-a")
+		podtracerArgs = append(podtracerArgs, cmd.Spec.Args)
+		podtracerArgs = append(podtracerArgs, "--pod")
+		podtracerArgs = append(podtracerArgs, pod.ObjectMeta.Name)
+		podtracerArgs = append(podtracerArgs, "-n")
+		podtracerArgs = append(podtracerArgs, pod.ObjectMeta.Namespace)
+
+		// Temporarily listen to messages from podtracer on the operator pod
+		// with nc and write those to file. Get the operator pod's IP and serve on port 5555 for now.
+
+		// Generate the Cronjob object
+		CronJob, err := r.CronJob(podtracerArgs, pod.ObjectMeta.Name, pod.Spec.NodeName)
+		if err != nil {
+			fmt.Println(err.Error())
+
+			return ctrl.Result{}, err
+		}
+
+		// Create the Job in k8s api
+		err = r.Client.Create(context.Background(), CronJob)
+		if err != nil {
+			fmt.Println(err.Error())
+			return ctrl.Result{}, err
+		}
+	}
 
 	return ctrl.Result{}, nil
+}
+
+func (r *CommandJobReconciler) GetRunningPodsByLabel(ctx context.Context, label map[string]string, namespace string) (*corev1.PodList, error) {
+
+	podlist := &corev1.PodList{}
+	listOpts := []client.ListOption{
+		client.MatchingLabels(label),
+		client.InNamespace(namespace),
+		// client.MatchingFields{"phase": "Running"}, // TODO: TSHOOT contantly returning status.phase doesn't exist...
+	}
+
+	err := r.Client.List(ctx, podlist, listOpts...)
+	if err != nil {
+		fmt.Printf("GetRunningPodsByLabel, Error listing pods for tcpdump: %s ", err.Error())
+		return nil, err
+	}
+
+	if len(podlist.Items) <= 0 {
+		return nil, fmt.Errorf("no running pod corresponds to label %v and namespace %v ", label, namespace)
+	}
+
+	return podlist, nil
+}
+
+func (r *CommandJobReconciler) CronJob(podtracerArgsList []string, targetPodName string, targetNodeName string) (*batchv1.Job, error) {
+
+	var job *batchv1.Job
+
+	var jobObjectMeta metav1.ObjectMeta
+	var jobPodTemplate corev1.PodTemplateSpec
+	var privileged bool
+	var HostPathDirectory corev1.HostPathType
+	var HostPathSocket corev1.HostPathType
+
+	HostPathDirectory = "Directory"
+	HostPathSocket = "Socket"
+
+	privileged = true
+
+	// TODO: improve the labeling system to identify jobs running
+	jobObjectMeta = metav1.ObjectMeta{
+		Name: "tcpdump-" + targetPodName,
+		Labels: map[string]string{
+			"tcpdumpJob": "snoopy-operator",
+		},
+		Namespace: "snoopy-operator",
+	}
+
+	jobPodTemplate = corev1.PodTemplateSpec{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels: map[string]string{"app": "go-remote"},
+		},
+		Spec: corev1.PodSpec{
+			NodeName:           targetNodeName,
+			ServiceAccountName: serviceAccountName,
+			RestartPolicy:      "Never",
+			Containers: []corev1.Container{
+				{
+					Name:            "podtracer",
+					Image:           podtracerImage,
+					ImagePullPolicy: corev1.PullAlways,
+					Command:         []string{"/usr/bin/podtracer"},
+					Args:            podtracerArgsList,
+					SecurityContext: &corev1.SecurityContext{
+						Privileged: &privileged,
+					},
+					VolumeMounts: []corev1.VolumeMount{
+						{Name: "proc",
+							MountPath: "/host/proc",
+							ReadOnly:  false},
+						{Name: "crio-sock",
+							MountPath: "/var/run/crio/crio.sock",
+							ReadOnly:  false},
+						{Name: "pcap-data",
+							MountPath: "/pcap-data",
+							ReadOnly:  false},
+						{Name: "kubeconfig",
+							MountPath: "/root/.kube",
+							ReadOnly:  false},
+					},
+				},
+			},
+			Volumes: []corev1.Volume{{
+				Name: "proc",
+				VolumeSource: corev1.VolumeSource{
+					HostPath: &corev1.HostPathVolumeSource{
+						Path: "/proc",
+						Type: &HostPathDirectory,
+					},
+				},
+			},
+				{
+					Name: "crio-sock",
+					VolumeSource: corev1.VolumeSource{
+						HostPath: &corev1.HostPathVolumeSource{
+							Path: "/var/run/crio/crio.sock",
+							Type: &HostPathSocket,
+						},
+					},
+				},
+				{
+					Name: "pcap-data",
+					VolumeSource: corev1.VolumeSource{
+						EmptyDir: &corev1.EmptyDirVolumeSource{},
+					},
+				},
+				{
+					Name: "kubeconfig",
+					VolumeSource: corev1.VolumeSource{
+						Secret: &corev1.SecretVolumeSource{
+							SecretName: "podtracer-kubeconfig",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	job = &batchv1.Job{
+		ObjectMeta: jobObjectMeta,
+		Spec: batchv1.JobSpec{
+			Template: jobPodTemplate,
+		},
+	}
+
+	return job, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
