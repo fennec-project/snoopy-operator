@@ -13,15 +13,6 @@ resources:
     namespaced: true
   controller: true
   domain: fennecproject.io
-  group: pcap
-  kind: Tcpdump
-  path: github.com/fennec-project/snoopy-operator/apis/pcap/v1alpha1
-  version: v1alpha1
-- api:
-    crdVersion: v1
-    namespaced: true
-  controller: true
-  domain: fennecproject.io
   group: job
   kind: CommandJob
   path: github.com/fennec-project/snoopy-operator/apis/job/v1alpha1
