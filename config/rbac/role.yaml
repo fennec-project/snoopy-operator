@@ -33,6 +33,32 @@ rules:
   - patch
   - update
 - apiGroups:
+  - job.fennecproject.io
+  resources:
+  - commandjobs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - job.fennecproject.io
+  resources:
+  - commandjobs/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - job.fennecproject.io
+  resources:
+  - commandjobs/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - pcap.fennecproject.io
   resources:
   - tcpdumps

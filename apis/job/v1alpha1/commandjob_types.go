@@ -23,8 +23,8 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// CommandSpec defines the desired state of Command
-type CommandSpec struct {
+// CommandJobSpec defines the desired state of CommandJob
+type CommandJobSpec struct {
 	// Command is any linux binary that can be run by podtracer in the context of a Pod
 	// Warning: The command must be present in the used potracer image for it to be used
 	Command string `json:"command,omitempty"`
@@ -33,39 +33,41 @@ type CommandSpec struct {
 	Args string `json:"args,omitempty"`
 
 	// LabelSelector is the label to find the target Pods
-	LabelSelector map[string]string `json:"labelSelector,omitemtpy"`
+	LabelSelector map[string]string `json:"labelSelector,omitempty"`
 
 	// TargetNamespace is the k8s where the target Pod lives
 	TargetNamespace string `json:"targetNamespace,omitempty"`
+
+	// The schedule in Cron format, see https://en.wikipedia.org/wiki/Cron.
+	Schedule string `json:"schedule,omitempty"`
 }
 
-// CommandStatus defines the observed state of Command
-type CommandStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+// CommandJobStatus defines the observed state of CommandJob
+type CommandJobStatus struct {
+	CronJobList []string `json:"cronJobList,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// Command is the Schema for the commands API
-type Command struct {
+// CommandJob is the Schema for the commandjobs API
+type CommandJob struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   CommandSpec   `json:"spec,omitempty"`
-	Status CommandStatus `json:"status,omitempty"`
+	Spec   CommandJobSpec   `json:"spec,omitempty"`
+	Status CommandJobStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// CommandList contains a list of Command
-type CommandList struct {
+// CommandJobList contains a list of CommandJob
+type CommandJobList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Command `json:"items"`
+	Items           []CommandJob `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Command{}, &CommandList{})
+	SchemeBuilder.Register(&CommandJob{}, &CommandJobList{})
 }

@@ -1,20 +1,20 @@
-# permissions for end users to view commands.
+# permissions for end users to view commandjobs.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: command-viewer-role
+  name: commandjob-viewer-role
 rules:
 - apiGroups:
-  - exec.fennecproject.io
+  - job.fennecproject.io
   resources:
-  - commands
+  - commandjobs
   verbs:
   - get
   - list
   - watch
 - apiGroups:
-  - exec.fennecproject.io
+  - job.fennecproject.io
   resources:
-  - commands/status
+  - commandjobs/status
   verbs:
   - get

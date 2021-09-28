@@ -1,0 +1,12 @@
+apiVersion: job.fennecproject.io/v1alpha1
+kind: CommandJob
+metadata:
+  name: tcpdump-job
+spec:
+  command: "ip"
+  args: "addr"
+  labelSelector: { 
+    networkMonitor: "true",
+    }
+  targetNamespace: cnf-telco
+  schedule: "* * * * *"
