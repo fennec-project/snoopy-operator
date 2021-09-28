@@ -1,0 +1,24 @@
+# permissions for end users to edit commandjobs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: commandjob-editor-role
+rules:
+- apiGroups:
+  - job.fennecproject.io
+  resources:
+  - commandjobs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - job.fennecproject.io
+  resources:
+  - commandjobs/status
+  verbs:
+  - get

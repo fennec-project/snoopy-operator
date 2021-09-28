@@ -32,8 +32,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	execv1alpha1 "github.com/fennec-project/snoopy-operator/apis/exec/v1alpha1"
+	jobv1alpha1 "github.com/fennec-project/snoopy-operator/apis/job/v1alpha1"
 	pcapv1alpha1 "github.com/fennec-project/snoopy-operator/apis/pcap/v1alpha1"
 	execcontrollers "github.com/fennec-project/snoopy-operator/controllers/exec"
+	jobcontrollers "github.com/fennec-project/snoopy-operator/controllers/job"
 	pcapcontrollers "github.com/fennec-project/snoopy-operator/controllers/pcap"
 	//+kubebuilder:scaffold:imports
 )
@@ -49,6 +51,7 @@ func init() {
 	utilruntime.Must(pcapv1alpha1.AddToScheme(scheme))
 
 	utilruntime.Must(execv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(jobv1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -98,6 +101,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err = (&jobcontrollers.CommandJobReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "CommandJob")
+		os.Exit(1)
+	}
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
