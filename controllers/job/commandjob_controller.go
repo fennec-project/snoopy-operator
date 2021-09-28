@@ -20,10 +20,10 @@ import (
 	"context"
 	"fmt"
 
+	zap "go.uber.org/zap"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-
-	zap "go.uber.org/zap"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -129,18 +129,33 @@ func (r *CommandJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 				}
 			}
 
-		} else {
-			// CommandJob is being deleted
-			if containsString(r.Cmd.GetFinalizers(), finalizer) {
+		}
+	} else {
+		// CommandJob is being deleted
+		if containsString(r.Cmd.GetFinalizers(), finalizer) {
 
-				// Find the list of snoopy jobs created on the status field
-				// Delete all of them and set
+			// Find the list of snoopy jobs created on the status field
+			// Delete all of them and remove the CommandJob finalizer
 
-				// remove our finalizer from the list and update it.
-				r.Cmd.SetFinalizers(removeString(r.Cmd.GetFinalizers(), finalizer))
-				if err := r.Update(context.Background(), r.Cmd); err != nil {
-					return ctrl.Result{Requeue: true}, err
+			for _, c := range r.Cmd.Status.CronJobList {
+
+				cronjob := &batchv1.CronJob{}
+
+				err = r.Client.Get(context.Background(),
+					client.ObjectKey{Namespace: "snoopy-operator", Name: c},
+					cronjob)
+
+				if err != nil {
+					return ctrl.Result{Requeue: true}, nil
 				}
+
+				r.Client.Delete(context.Background(), cronjob)
+			}
+
+			// remove our finalizer from the list and update it.
+			r.Cmd.SetFinalizers(removeString(r.Cmd.GetFinalizers(), finalizer))
+			if err := r.Update(context.Background(), r.Cmd); err != nil {
+				return ctrl.Result{Requeue: true}, err
 			}
 		}
 	}
