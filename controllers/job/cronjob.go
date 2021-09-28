@@ -158,6 +158,5 @@ func (r *CommandJobReconciler) CronJob(podtracerArgsList []string, targetPodName
 			FailedJobsHistoryLimit: FailedJobsHistoryLimit,
 		},
 	}
-
 	return CronJob, nil
 }

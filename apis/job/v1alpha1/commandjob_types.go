@@ -33,7 +33,7 @@ type CommandJobSpec struct {
 	Args string `json:"args,omitempty"`
 
 	// LabelSelector is the label to find the target Pods
-	LabelSelector map[string]string `json:"labelSelector,omitemtpy"`
+	LabelSelector map[string]string `json:"labelSelector,omitempty"`
 
 	// TargetNamespace is the k8s where the target Pod lives
 	TargetNamespace string `json:"targetNamespace,omitempty"`
@@ -44,8 +44,7 @@ type CommandJobSpec struct {
 
 // CommandJobStatus defines the observed state of CommandJob
 type CommandJobStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	CronJobList []string `json:"cronJobList,omitempty"`
 }
 
 //+kubebuilder:object:root=true

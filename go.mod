@@ -10,6 +10,7 @@ require (
 	github.com/onsi/gomega v1.16.0
 	go.etcd.io/etcd v0.5.0-alpha.5.0.20200910180754-dd1b699fc489 // indirect
 	go.uber.org/tools v0.0.0-20190618225709-2cfd321de3ee // indirect
+	go.uber.org/zap v1.19.1 // indirect
 	google.golang.org/grpc v1.41.0
 	gotest.tools v2.2.0+incompatible // indirect
 	k8s.io/api v0.22.2

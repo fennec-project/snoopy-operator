@@ -1,7 +1,7 @@
 apiVersion: job.fennecproject.io/v1alpha1
 kind: CommandJob
 metadata:
-  name: commandjob-sample
+  name: tcpdump-job
 spec:
   command: "ip"
   args: "addr"
