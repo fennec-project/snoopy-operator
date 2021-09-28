@@ -9,4 +9,4 @@ spec:
     networkMonitor: "true",
     }
   targetNamespace: cnf-telco
-  schedule: "*****"
+  schedule: "* * * * *"
