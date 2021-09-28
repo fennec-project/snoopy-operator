@@ -56,11 +56,14 @@ spec:
               targetNamespace:
                 description: TargetNamespace is the k8s where the target Pod lives
                 type: string
-            required:
-            - labelSelector
             type: object
           status:
             description: CommandJobStatus defines the observed state of CommandJob
+            properties:
+              cronJobList:
+                items:
+                  type: string
+                type: array
             type: object
         type: object
     served: true
