@@ -37,6 +37,9 @@ type CommandJobSpec struct {
 
 	// TargetNamespace is the k8s where the target Pod lives
 	TargetNamespace string `json:"targetNamespace,omitempty"`
+
+	// The schedule in Cron format, see https://en.wikipedia.org/wiki/Cron.
+	Schedule string `json:"schedule,omitempty"`
 }
 
 // CommandJobStatus defines the observed state of CommandJob

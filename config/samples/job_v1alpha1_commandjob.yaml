@@ -3,5 +3,10 @@ kind: CommandJob
 metadata:
   name: commandjob-sample
 spec:
-  # Add fields here
-  foo: bar
+  command: "ip"
+  args: "addr"
+  labelSelector: { 
+    networkMonitor: "true",
+    }
+  targetNamespace: cnf-telco
+  schedule: "*****"
