@@ -1,0 +1,8 @@
+apiVersion: data.fennecproject.io/v1alpha1
+kind: SnoopyDataEndpoint
+metadata:
+  name: snoopydataendpoint-sample
+spec:
+  # Add fields here
+  dataEndpointType: raw
+  port: 5555

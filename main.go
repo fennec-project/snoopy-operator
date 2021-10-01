@@ -31,7 +31,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	datav1alpha1 "github.com/fennec-project/snoopy-operator/apis/data/v1alpha1"
 	jobv1alpha1 "github.com/fennec-project/snoopy-operator/apis/job/v1alpha1"
+	datacontrollers "github.com/fennec-project/snoopy-operator/controllers/data"
 	jobcontrollers "github.com/fennec-project/snoopy-operator/controllers/job"
 	//+kubebuilder:scaffold:imports
 )
@@ -45,6 +47,7 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(jobv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(datav1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -82,6 +85,13 @@ func main() {
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "SnoopyJob")
+		os.Exit(1)
+	}
+	if err = (&datacontrollers.SnoopyDataEndpointReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "SnoopyDataEndpoint")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
