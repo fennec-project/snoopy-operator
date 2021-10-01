@@ -6,7 +6,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (r *CommandJobReconciler) CronJob(podtracerArgsList []string, targetPodName string, targetNodeName string, schedule string) (*batchv1.CronJob, error) {
+func (r *SnoopyJobReconciler) CronJob(podtracerArgsList []string, targetPodName string, targetNodeName string, schedule string) (*batchv1.CronJob, error) {
 
 	var CronJob *batchv1.CronJob
 	var privileged bool
@@ -98,7 +98,7 @@ func (r *CommandJobReconciler) CronJob(podtracerArgsList []string, targetPodName
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "snoopy-job-" + targetPodName,
 			Labels: map[string]string{
-				"snoopyJob": "CommandJob",
+				"snoopyJob": "SnoopyJob",
 			},
 			Namespace: "snoopy-operator",
 		},
@@ -117,7 +117,7 @@ func (r *CommandJobReconciler) CronJob(podtracerArgsList []string, targetPodName
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "snoopy-cronjob-" + targetPodName,
 			Labels: map[string]string{
-				"snoopyCronJob": "CommandJob",
+				"snoopyCronJob": "SnoopyJob",
 			},
 			Namespace: "snoopy-operator",
 		},

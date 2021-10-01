@@ -1,20 +1,24 @@
-# permissions for end users to view commandjobs.
+# permissions for end users to edit snoopyjobs.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: commandjob-viewer-role
+  name: snoopyjob-editor-role
 rules:
 - apiGroups:
   - job.fennecproject.io
   resources:
-  - commandjobs
+  - snoopyjobs
   verbs:
+  - create
+  - delete
   - get
   - list
+  - patch
+  - update
   - watch
 - apiGroups:
   - job.fennecproject.io
   resources:
-  - commandjobs/status
+  - snoopyjobs/status
   verbs:
   - get

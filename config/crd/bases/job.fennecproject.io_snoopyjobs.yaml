@@ -6,20 +6,20 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.4.1
   creationTimestamp: null
-  name: commandjobs.job.fennecproject.io
+  name: snoopyjobs.job.fennecproject.io
 spec:
   group: job.fennecproject.io
   names:
-    kind: CommandJob
-    listKind: CommandJobList
-    plural: commandjobs
-    singular: commandjob
+    kind: SnoopyJob
+    listKind: SnoopyJobList
+    plural: snoopyjobs
+    singular: snoopyjob
   scope: Namespaced
   versions:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: CommandJob is the Schema for the commandjobs API
+        description: SnoopyJob is the Schema for the snoopyjobs API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -34,7 +34,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: CommandJobSpec defines the desired state of CommandJob
+            description: SnoopyJobSpec defines the desired state of SnoopyJob
             properties:
               args:
                 description: Args is a string containing all arguments for a given
@@ -58,7 +58,7 @@ spec:
                 type: string
             type: object
           status:
-            description: CommandJobStatus defines the observed state of CommandJob
+            description: SnoopyJobStatus defines the observed state of SnoopyJob
             properties:
               cronJobList:
                 items:

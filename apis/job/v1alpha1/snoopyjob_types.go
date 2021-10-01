@@ -23,8 +23,8 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// CommandJobSpec defines the desired state of CommandJob
-type CommandJobSpec struct {
+// SnoopyJobSpec defines the desired state of SnoopyJob
+type SnoopyJobSpec struct {
 	// Command is any linux binary that can be run by podtracer in the context of a Pod
 	// Warning: The command must be present in the used potracer image for it to be used
 	Command string `json:"command,omitempty"`
@@ -42,32 +42,32 @@ type CommandJobSpec struct {
 	Schedule string `json:"schedule,omitempty"`
 }
 
-// CommandJobStatus defines the observed state of CommandJob
-type CommandJobStatus struct {
+// SnoopyJobStatus defines the observed state of SnoopyJob
+type SnoopyJobStatus struct {
 	CronJobList []string `json:"cronJobList,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// CommandJob is the Schema for the commandjobs API
-type CommandJob struct {
+// SnoopyJob is the Schema for the snoopyjobs API
+type SnoopyJob struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   CommandJobSpec   `json:"spec,omitempty"`
-	Status CommandJobStatus `json:"status,omitempty"`
+	Spec   SnoopyJobSpec   `json:"spec,omitempty"`
+	Status SnoopyJobStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// CommandJobList contains a list of CommandJob
-type CommandJobList struct {
+// SnoopyJobList contains a list of SnoopyJob
+type SnoopyJobList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []CommandJob `json:"items"`
+	Items           []SnoopyJob `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&CommandJob{}, &CommandJobList{})
+	SchemeBuilder.Register(&SnoopyJob{}, &SnoopyJobList{})
 }
