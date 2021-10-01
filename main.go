@@ -77,11 +77,11 @@ func main() {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
-	if err = (&jobcontrollers.CommandJobReconciler{
+	if err = (&jobcontrollers.SnoopyJobReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "CommandJob")
+		setupLog.Error(err, "unable to create controller", "controller", "SnoopyJob")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder

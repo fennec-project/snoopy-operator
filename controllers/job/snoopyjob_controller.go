@@ -23,59 +23,67 @@ import (
 	zap "go.uber.org/zap"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	jobv1alpha1 "github.com/fennec-project/snoopy-operator/apis/job/v1alpha1"
 )
 
-// CommandJobReconciler reconciles a CommandJob object
-type CommandJobReconciler struct {
+// SnoopyJobReconciler reconciles a SnoopyJob object
+type SnoopyJobReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
-	Cmd    *jobv1alpha1.CommandJob
+	Cmd    *jobv1alpha1.SnoopyJob
 }
 
-//+kubebuilder:rbac:groups=job.fennecproject.io,resources=commandjobs,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=job.fennecproject.io,resources=commandjobs/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=job.fennecproject.io,resources=commandjobs/finalizers,verbs=update
+//+kubebuilder:rbac:groups=job.fennecproject.io,resources=snoopyjobs,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=job.fennecproject.io,resources=snoopyjobs/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=job.fennecproject.io,resources=snoopyjobs/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 // TODO(user): Modify the Reconcile function to compare the state specified by
-// the CommandJob object against the actual cluster state, and then
+// the SnoopyJob object against the actual cluster state, and then
 // perform operations to make the cluster state reflect the state specified by
 // the user.
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.9.2/pkg/reconcile
-func (r *CommandJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *SnoopyJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger, _ := zap.NewProduction()
 	defer logger.Sync()
 
 	// Log User Info message about new jobs
 	logger.Info("Checking for new command Jobs")
 
-	// get CommandJobs
-	r.Cmd = &jobv1alpha1.CommandJob{}
+	// get SnoopyJobs
+	r.Cmd = &jobv1alpha1.SnoopyJob{}
 	err := r.Client.Get(ctx, req.NamespacedName, r.Cmd)
 	if err != nil {
+		if errors.IsNotFound(err) {
+			// Request object not found, could have been deleted after reconcile request.
+			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
+			// Return and don't requeue
+			return reconcile.Result{}, nil
+		}
 		return ctrl.Result{}, err
 	}
 	// Log Debug message with full new Command Job values
 
 	// Check for deletion timestamp and finalizers
-	finalizer := "commandjob.job.fennecproject.io"
+	finalizer := "snoopyjob.job.fennecproject.io"
 	if r.Cmd.ObjectMeta.DeletionTimestamp.IsZero() {
 
-		// CommandJob is not being deleted, so if it does not have our finalizer,
+		// SnoopyJob is not being deleted, so if it does not have our finalizer,
 		// then lets add the finalizer and update the object. This is equivalent
 		// registering our finalizer.
 
 		if !containsString(r.Cmd.GetFinalizers(), finalizer) {
 
-			logger.Info("New CommandJob found setting finalizers")
+			logger.Info("New SnoopyJob found setting finalizers")
 
 			r.Cmd.SetFinalizers(append(r.Cmd.GetFinalizers(), finalizer))
 			if err := r.Update(context.Background(), r.Cmd); err != nil {
@@ -131,11 +139,11 @@ func (r *CommandJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 		}
 	} else {
-		// CommandJob is being deleted
+		// SnoopyJob is being deleted
 		if containsString(r.Cmd.GetFinalizers(), finalizer) {
 
 			// Find the list of snoopy jobs created on the status field
-			// Delete all of them and remove the CommandJob finalizer
+			// Delete all of them and remove the SnoopyJob finalizer
 
 			for _, c := range r.Cmd.Status.CronJobList {
 
@@ -167,7 +175,7 @@ func (r *CommandJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	return ctrl.Result{Requeue: false}, nil
 }
 
-func (r *CommandJobReconciler) GetRunningPodsByLabel(ctx context.Context, label map[string]string, namespace string) (*corev1.PodList, error) {
+func (r *SnoopyJobReconciler) GetRunningPodsByLabel(ctx context.Context, label map[string]string, namespace string) (*corev1.PodList, error) {
 
 	podlist := &corev1.PodList{}
 	listOpts := []client.ListOption{
@@ -190,9 +198,9 @@ func (r *CommandJobReconciler) GetRunningPodsByLabel(ctx context.Context, label 
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *CommandJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *SnoopyJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&jobv1alpha1.CommandJob{}).
+		For(&jobv1alpha1.SnoopyJob{}).
 		Complete(r)
 }
 

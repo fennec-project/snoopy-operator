@@ -1,7 +1,7 @@
 apiVersion: job.fennecproject.io/v1alpha1
-kind: CommandJob
+kind: SnoopyJob
 metadata:
-  name: tcpdump-job
+  name: snoopy-samplejob
 spec:
   command: "ip"
   args: "addr"
