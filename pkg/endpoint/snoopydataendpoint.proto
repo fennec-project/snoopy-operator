@@ -6,7 +6,7 @@ message Metadata {
     string podName = 1;
 }
 message Data {
-    bytes Data = 2;
+    bytes Data = 1;
 }
 
 message Response {
