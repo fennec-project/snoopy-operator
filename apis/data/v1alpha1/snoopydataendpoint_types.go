@@ -20,8 +20,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+type RawReceiver struct {
+	Port     string `json:"port,omitempty"`
+	FilePath string `json:"filePath,omitempty"`
+}
 
 // SnoopyDataEndpointSpec defines the desired state of SnoopyDataEndpoint
 type SnoopyDataEndpointSpec struct {
@@ -31,11 +33,8 @@ type SnoopyDataEndpointSpec struct {
 	// TODO: possible future implementations kafka, ELK stack etc.
 	DataEndpointType string `json:"dataEndpointType,omitempty"`
 
-	// Port for raw mode listening
-	Port string `json:"port,omitempty"`
-
-	// File path for raw mode
-	FilePath string `json:"filePath,omitempty"`
+	// Raw Receivers take raw traffic on designated port and path
+	RawReceivers []RawReceiver `json:"rawReceivers,omitempty"`
 }
 
 // SnoopyDataEndpointStatus defines the observed state of SnoopyDataEndpoint
