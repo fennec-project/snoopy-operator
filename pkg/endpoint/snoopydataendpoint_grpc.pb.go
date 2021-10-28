@@ -18,8 +18,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DataEndpointClient interface {
-	SendMetadata(ctx context.Context, in *Metadata, opts ...grpc.CallOption) (*Response, error)
-	Write(ctx context.Context, in *Data, opts ...grpc.CallOption) (*Response, error)
+	ExportPodData(ctx context.Context, opts ...grpc.CallOption) (DataEndpoint_ExportPodDataClient, error)
 }
 
 type dataEndpointClient struct {
@@ -30,30 +29,45 @@ func NewDataEndpointClient(cc grpc.ClientConnInterface) DataEndpointClient {
 	return &dataEndpointClient{cc}
 }
 
-func (c *dataEndpointClient) SendMetadata(ctx context.Context, in *Metadata, opts ...grpc.CallOption) (*Response, error) {
-	out := new(Response)
-	err := c.cc.Invoke(ctx, "/endpoint.DataEndpoint/SendMetadata", in, out, opts...)
+func (c *dataEndpointClient) ExportPodData(ctx context.Context, opts ...grpc.CallOption) (DataEndpoint_ExportPodDataClient, error) {
+	stream, err := c.cc.NewStream(ctx, &DataEndpoint_ServiceDesc.Streams[0], "/endpoint.DataEndpoint/ExportPodData", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &dataEndpointExportPodDataClient{stream}
+	return x, nil
 }
 
-func (c *dataEndpointClient) Write(ctx context.Context, in *Data, opts ...grpc.CallOption) (*Response, error) {
-	out := new(Response)
-	err := c.cc.Invoke(ctx, "/endpoint.DataEndpoint/Write", in, out, opts...)
-	if err != nil {
+type DataEndpoint_ExportPodDataClient interface {
+	Send(*PodData) error
+	CloseAndRecv() (*Response, error)
+	grpc.ClientStream
+}
+
+type dataEndpointExportPodDataClient struct {
+	grpc.ClientStream
+}
+
+func (x *dataEndpointExportPodDataClient) Send(m *PodData) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *dataEndpointExportPodDataClient) CloseAndRecv() (*Response, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
 		return nil, err
 	}
-	return out, nil
+	m := new(Response)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 // DataEndpointServer is the server API for DataEndpoint service.
 // All implementations must embed UnimplementedDataEndpointServer
 // for forward compatibility
 type DataEndpointServer interface {
-	SendMetadata(context.Context, *Metadata) (*Response, error)
-	Write(context.Context, *Data) (*Response, error)
+	ExportPodData(DataEndpoint_ExportPodDataServer) error
 	mustEmbedUnimplementedDataEndpointServer()
 }
 
@@ -61,11 +75,8 @@ type DataEndpointServer interface {
 type UnimplementedDataEndpointServer struct {
 }
 
-func (UnimplementedDataEndpointServer) SendMetadata(context.Context, *Metadata) (*Response, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SendMetadata not implemented")
-}
-func (UnimplementedDataEndpointServer) Write(context.Context, *Data) (*Response, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Write not implemented")
+func (UnimplementedDataEndpointServer) ExportPodData(DataEndpoint_ExportPodDataServer) error {
+	return status.Errorf(codes.Unimplemented, "method ExportPodData not implemented")
 }
 func (UnimplementedDataEndpointServer) mustEmbedUnimplementedDataEndpointServer() {}
 
@@ -80,40 +91,30 @@ func RegisterDataEndpointServer(s grpc.ServiceRegistrar, srv DataEndpointServer)
 	s.RegisterService(&DataEndpoint_ServiceDesc, srv)
 }
 
-func _DataEndpoint_SendMetadata_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Metadata)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DataEndpointServer).SendMetadata(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/endpoint.DataEndpoint/SendMetadata",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DataEndpointServer).SendMetadata(ctx, req.(*Metadata))
-	}
-	return interceptor(ctx, in, info, handler)
+func _DataEndpoint_ExportPodData_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(DataEndpointServer).ExportPodData(&dataEndpointExportPodDataServer{stream})
 }
 
-func _DataEndpoint_Write_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Data)
-	if err := dec(in); err != nil {
+type DataEndpoint_ExportPodDataServer interface {
+	SendAndClose(*Response) error
+	Recv() (*PodData, error)
+	grpc.ServerStream
+}
+
+type dataEndpointExportPodDataServer struct {
+	grpc.ServerStream
+}
+
+func (x *dataEndpointExportPodDataServer) SendAndClose(m *Response) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *dataEndpointExportPodDataServer) Recv() (*PodData, error) {
+	m := new(PodData)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
-	if interceptor == nil {
-		return srv.(DataEndpointServer).Write(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/endpoint.DataEndpoint/Write",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DataEndpointServer).Write(ctx, req.(*Data))
-	}
-	return interceptor(ctx, in, info, handler)
+	return m, nil
 }
 
 // DataEndpoint_ServiceDesc is the grpc.ServiceDesc for DataEndpoint service.
@@ -122,16 +123,13 @@ func _DataEndpoint_Write_Handler(srv interface{}, ctx context.Context, dec func(
 var DataEndpoint_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "endpoint.DataEndpoint",
 	HandlerType: (*DataEndpointServer)(nil),
-	Methods: []grpc.MethodDesc{
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
 		{
-			MethodName: "SendMetadata",
-			Handler:    _DataEndpoint_SendMetadata_Handler,
-		},
-		{
-			MethodName: "Write",
-			Handler:    _DataEndpoint_Write_Handler,
+			StreamName:    "ExportPodData",
+			Handler:       _DataEndpoint_ExportPodData_Handler,
+			ClientStreams: true,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
 	Metadata: "snoopydataendpoint.proto",
 }

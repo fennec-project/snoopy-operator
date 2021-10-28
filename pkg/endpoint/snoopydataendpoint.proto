@@ -2,11 +2,9 @@ syntax = "proto3";
 option go_package = "./endpoint";
 package endpoint;
 
-message Metadata {
-    string podName = 1;
-}
-message Data {
-    bytes Data = 1;
+message PodData {
+    string name = 1;
+    bytes data = 2;
 }
 
 message Response {
@@ -15,6 +13,5 @@ message Response {
 }
 
 service DataEndpoint{
-    rpc SendMetadata(Metadata) returns(Response) {}
-    rpc Write(Data) returns (Response) {}
+    rpc ExportPodData(stream PodData) returns(Response) {}
 }
