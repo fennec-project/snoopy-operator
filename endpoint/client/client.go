@@ -14,8 +14,8 @@ import (
 
 func main() {
 
-	// dail server
-	conn, err := grpc.Dial(":50005", grpc.WithInsecure())
+	// dial server
+	conn, err := grpc.Dial("127.0.0.1:51001", grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("can not connect with server %v", err)
 	}
@@ -35,7 +35,7 @@ func main() {
 	go func() {
 		for i := 1; i <= 10; i++ {
 			// generates random number and sends it to stream
-			mydata := []byte("That is my test string")
+			mydata := []byte("That is my test string\n")
 			pd := pb.PodData{Name: "podtest", Data: mydata}
 			if err := stream.Send(&pd); err != nil {
 				log.Fatalf("can not send %v", err)

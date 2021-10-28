@@ -44,12 +44,12 @@ func (s server) ExportPodData(srv pb.DataEndpoint_ExportPodDataServer) error {
 			continue
 		}
 
-		// update max and send it to stream
+		// Send response back to client
 		resp := pb.Response{Message: "Received data for pod " + pd.Name}
 		if err := srv.Send(&resp); err != nil {
 			log.Printf("send error %v", err)
 		}
-		log.Printf("Received data for pod %v", pd.Name)
+		// log.Printf("Received data for pod %v", pd.Name)
 
 		// open a file to write and append podData
 		f, err := os.OpenFile(pd.Name, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -67,12 +67,17 @@ func (s server) ExportPodData(srv pb.DataEndpoint_ExportPodDataServer) error {
 }
 
 func main() {
+
+	// Get os args
+	address := os.Args[1]
+	port := os.Args[2]
+
 	// create listener
-	lis, err := net.Listen("tcp", ":50005")
+	lis, err := net.Listen("tcp", address+":"+port)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
-	fmt.Print("Listening on port 50005...")
+	fmt.Printf("Listening on ip %s and port %s", address, port)
 	// create grpc server
 	s := grpc.NewServer()
 	pb.RegisterDataEndpointServer(s, &server{})
