@@ -26,6 +26,10 @@ spec:
         - --
         args:
         - "while true; do sleep 30; done;"
+        ports:
+        - containerPort: 51001
         image: "quay.io/fennec-project/snoopy-data-endpoint:0.0.1"
         imagePullPolicy: Always
         name: snoopy-data-endpoint
+        securityContext:
+          privileged: true
