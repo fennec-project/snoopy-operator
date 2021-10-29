@@ -1,0 +1,31 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: snoopy-data-endpoint
+  namespace: snoopy-operator
+  labels:
+    snoopy: "dataEndpoint"
+spec:
+  selector:
+    matchLabels:
+      snoopy: "dataEndpoint"
+  replicas: 1
+  template:
+    metadata:
+      name: snoopy-data-endpoint
+      namespace: snoopy-operator
+      labels:
+        snoopy: "dataEndpoint"
+    spec:
+      serviceAccountName: snoopy-operator-sa
+      containers:
+      - command:
+        - /bin/bash
+        - -c 
+        - --
+        args:
+        - "while true; do sleep 30; done;"
+        image: "quay.io/fennec-project/snoopy-data-endpoint:0.0.1"
+        imagePullPolicy: Always
+        name: snoopy-data-endpoint

@@ -69,15 +69,15 @@ func (s server) ExportPodData(srv pb.DataEndpoint_ExportPodDataServer) error {
 func main() {
 
 	// Get os args
-	address := os.Args[1]
-	port := os.Args[2]
+	// address := os.Args[1]
+	port := os.Args[1]
 
 	// create listener
-	lis, err := net.Listen("tcp", address+":"+port)
+	lis, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
-	fmt.Printf("Listening on ip %s and port %s", address, port)
+	fmt.Printf("Listening on port %s", port)
 	// create grpc server
 	s := grpc.NewServer()
 	pb.RegisterDataEndpointServer(s, &server{})
