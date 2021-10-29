@@ -1,0 +1,20 @@
+# permissions for end users to view snoopydataendpoints.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: snoopydataendpoint-viewer-role
+rules:
+- apiGroups:
+  - data.fennecproject.io
+  resources:
+  - snoopydataendpoints
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - data.fennecproject.io
+  resources:
+  - snoopydataendpoints/status
+  verbs:
+  - get

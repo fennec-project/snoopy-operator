@@ -1,0 +1,24 @@
+# permissions for end users to edit snoopydataendpoints.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: snoopydataendpoint-editor-role
+rules:
+- apiGroups:
+  - data.fennecproject.io
+  resources:
+  - snoopydataendpoints
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - data.fennecproject.io
+  resources:
+  - snoopydataendpoints/status
+  verbs:
+  - get

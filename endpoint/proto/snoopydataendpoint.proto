@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package protobuf;
+
+option go_package = "github.com/fennec-project/snoopy-operator/endpoint/proto";
+
+service DataEndpoint{
+    rpc ExportPodData (stream PodData) returns (stream Response) {}
+}
+
+message PodData {
+    string name = 1;
+    bytes data = 2;
+}
+
+message Response {
+    string message = 1;
+}
+

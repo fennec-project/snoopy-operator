@@ -17,4 +17,13 @@ resources:
   kind: SnoopyJob
   path: github.com/fennec-project/snoopy-operator/apis/job/v1alpha1
   version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: fennecproject.io
+  group: data
+  kind: SnoopyDataEndpoint
+  path: github.com/fennec-project/snoopy-operator/apis/data/v1alpha1
+  version: v1alpha1
 version: "3"

@@ -2,4 +2,5 @@
 resources:
 - pcap_v1alpha1_tcpdump.yaml
 - job_v1alpha1_snoopyjob.yaml
+- data_v1alpha1_snoopydataendpoint.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples
