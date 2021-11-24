@@ -43,12 +43,17 @@ spec:
                   file path TODO: possible future implementations kafka, ELK stack
                   etc.'
                 type: string
-              filePath:
-                description: File path for raw mode
-                type: string
-              port:
-                description: Port for raw mode listening
-                type: string
+              rawReceivers:
+                description: Raw Receivers take raw traffic on designated port and
+                  path
+                items:
+                  properties:
+                    filePath:
+                      type: string
+                    port:
+                      type: string
+                  type: object
+                type: array
             type: object
           status:
             description: SnoopyDataEndpointStatus defines the observed state of SnoopyDataEndpoint
