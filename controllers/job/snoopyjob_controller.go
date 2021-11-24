@@ -112,6 +112,11 @@ func (r *SnoopyJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 				podtracerArgs = append(podtracerArgs, "-n")
 				podtracerArgs = append(podtracerArgs, pod.ObjectMeta.Namespace)
 
+				if r.Cmd.Spec.Timer != "" {
+					podtracerArgs = append(podtracerArgs, "-t")
+					podtracerArgs = append(podtracerArgs, r.Cmd.Spec.Timer)
+				}
+
 				// Temporarily listen to messages from podtracer on the operator pod
 				// with nc and write those to file. Get the operator pod's IP and serve on port 5555 for now.
 

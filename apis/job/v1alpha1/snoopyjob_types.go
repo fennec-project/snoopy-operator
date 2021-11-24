@@ -40,6 +40,10 @@ type SnoopyJobSpec struct {
 
 	// The schedule in Cron format, see https://en.wikipedia.org/wiki/Cron.
 	Schedule string `json:"schedule,omitempty"`
+
+	// Timer sets how much time to run the specified command.
+	// Valid example values are 10s, 2m, 1h etc.
+	Timer string `json:"timer,omitempty"`
 }
 
 // SnoopyJobStatus defines the observed state of SnoopyJob
