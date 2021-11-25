@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	zap "go.uber.org/zap"
+	jobv1alpha1 "github.com/fennec-project/snoopy-operator/apis/job/v1alpha1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -28,8 +28,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	jobv1alpha1 "github.com/fennec-project/snoopy-operator/apis/job/v1alpha1"
 )
 
 // SnoopyJobReconciler reconciles a SnoopyJob object
@@ -43,25 +41,11 @@ type SnoopyJobReconciler struct {
 //+kubebuilder:rbac:groups=job.fennecproject.io,resources=snoopyjobs/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=job.fennecproject.io,resources=snoopyjobs/finalizers,verbs=update
 
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the SnoopyJob object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.9.2/pkg/reconcile
 func (r *SnoopyJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger, _ := zap.NewProduction()
-	defer logger.Sync()
-
-	// Log User Info message about new jobs
-	logger.Info("Checking for new command Jobs")
 
 	// get SnoopyJobs
-	r.Cmd = &jobv1alpha1.SnoopyJob{}
-	err := r.Client.Get(ctx, req.NamespacedName, r.Cmd)
+	job := &jobv1alpha1.SnoopyJob{}
+	err := r.Client.Get(ctx, req.NamespacedName, job)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
@@ -69,115 +53,96 @@ func (r *SnoopyJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			// Return and don't requeue
 			return reconcile.Result{}, nil
 		}
+
 		return ctrl.Result{}, err
 	}
-	// Log Debug message with full new Command Job values
 
-	// Check for deletion timestamp and finalizers
-	finalizer := "snoopyjob.job.fennecproject.io"
-	if r.Cmd.ObjectMeta.DeletionTimestamp.IsZero() {
+	cronJobs, err := r.BuildCronJobForPods(job)
+	if err != nil {
+		return ctrl.Result{Requeue: true}, err
+	}
 
-		// SnoopyJob is not being deleted, so if it does not have our finalizer,
-		// then lets add the finalizer and update the object. This is equivalent
-		// registering our finalizer.
+	if err = r.ReconcileCronJobs(cronJobs); err != nil {
+		return ctrl.Result{Requeue: true}, err
+	}
 
-		if !containsString(r.Cmd.GetFinalizers(), finalizer) {
+	// ****** BuildJobForPods(podlist *corev1.PodList, podtracerOpts []string) *[]batchv1.Job
 
-			logger.Info("New SnoopyJob found setting finalizers")
+	return ctrl.Result{Requeue: false}, nil
+}
 
-			r.Cmd.SetFinalizers(append(r.Cmd.GetFinalizers(), finalizer))
-			if err := r.Update(context.Background(), r.Cmd); err != nil {
-				return ctrl.Result{Requeue: true}, err
-			}
-			// Running reconciliation tasks
-			// Target pod list by label and namespace
-			podlist, err := r.GetRunningPodsByLabel(ctx, r.Cmd.Spec.LabelSelector, r.Cmd.Spec.TargetNamespace)
-			if err != nil {
-				fmt.Println(err.Error())
-				return ctrl.Result{Requeue: true}, err
-			}
+func (r *SnoopyJobReconciler) ReconcileCronJobs(cronJobs *batchv1.CronJobList) error {
 
-			// CronJob creation by target pod
-			for _, pod := range podlist.Items {
-
-				// Build the command with arguments for podtracer
-
-				podtracerArgs := []string{}
-				podtracerArgs = append(podtracerArgs, "run")
-				podtracerArgs = append(podtracerArgs, r.Cmd.Spec.Command)
-				podtracerArgs = append(podtracerArgs, "-a")
-				podtracerArgs = append(podtracerArgs, r.Cmd.Spec.Args)
-				podtracerArgs = append(podtracerArgs, "--pod")
-				podtracerArgs = append(podtracerArgs, pod.ObjectMeta.Name)
-				podtracerArgs = append(podtracerArgs, "-n")
-				podtracerArgs = append(podtracerArgs, pod.ObjectMeta.Namespace)
-
-				if r.Cmd.Spec.Timer != "" {
-					podtracerArgs = append(podtracerArgs, "-t")
-					podtracerArgs = append(podtracerArgs, r.Cmd.Spec.Timer)
-				}
-
-				// Temporarily listen to messages from podtracer on the operator pod
-				// with nc and write those to file. Get the operator pod's IP and serve on port 5555 for now.
-
-				// Generate the Cronjob object
-				CronJob, err := r.CronJob(podtracerArgs, pod.ObjectMeta.Name, pod.Spec.NodeName, r.Cmd.Spec.Schedule)
-				if err != nil {
-					fmt.Println(err.Error())
-
-					return ctrl.Result{}, err
-				}
-
-				// Create the Job in k8s api
-				err = r.Client.Create(context.Background(), CronJob)
-				if err != nil {
-					fmt.Println(err.Error())
-					return ctrl.Result{}, err
-				}
-				r.Cmd.Status.CronJobList = append(r.Cmd.Status.CronJobList, CronJob.ObjectMeta.Name)
-				err = r.Client.Status().Update(context.Background(), r.Cmd)
-				if err != nil {
-					logger.Info(err.Error())
-					return ctrl.Result{Requeue: true}, nil
-				}
-			}
-
+	for _, cronJob := range cronJobs.Items {
+		// Create the Job in k8s api
+		err := r.Client.Create(context.Background(), &cronJob)
+		if err != nil {
+			fmt.Println(err.Error())
+			return err
 		}
-	} else {
-		// SnoopyJob is being deleted
-		if containsString(r.Cmd.GetFinalizers(), finalizer) {
 
-			// Find the list of snoopy jobs created on the status field
-			// Delete all of them and remove the SnoopyJob finalizer
-
-			for _, c := range r.Cmd.Status.CronJobList {
-
-				cronjob := &batchv1.CronJob{}
-
-				err = r.Client.Get(context.Background(),
-					client.ObjectKey{Namespace: "snoopy-operator", Name: c},
-					cronjob)
-
-				if err != nil {
-					return ctrl.Result{Requeue: true}, nil
-				}
-
-				r.Client.Delete(context.Background(), cronjob)
-			}
-
-			// remove our finalizer from the list and update it.
-			r.Cmd.SetFinalizers(removeString(r.Cmd.GetFinalizers(), finalizer))
-			if err := r.Update(context.Background(), r.Cmd); err != nil {
-				return ctrl.Result{Requeue: true}, err
-			}
+		// Updating Status field after creating
+		r.Cmd.Status.CronJobList = append(r.Cmd.Status.CronJobList, cronJob.ObjectMeta.Name)
+		err = r.Client.Status().Update(context.Background(), r.Cmd)
+		if err != nil {
+			return nil
 		}
 	}
 
-	// Log User Info message when job is being deleted or registering finalizer
+	return nil
+}
 
-	// List Target Pods matching labels on selected namespace
+func (r *SnoopyJobReconciler) BuildCronJobForPods(job *jobv1alpha1.SnoopyJob) (*batchv1.CronJobList, error) {
 
-	return ctrl.Result{Requeue: false}, nil
+	// Running reconciliation tasks
+	// Target pod list by label and namespace
+	podlist, err := r.GetRunningPodsByLabel(context.TODO(), job.Spec.LabelSelector, job.Spec.TargetNamespace)
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil, err
+	}
+
+	cronJobs := &batchv1.CronJobList{}
+	// CronJob creation by target pod
+	for _, pod := range podlist.Items {
+
+		// Build the command with arguments for podtracer
+
+		podtracerOpts := r.buildPodtracerOptions()
+
+		podtracerOpts = append(podtracerOpts, "--pod")
+		podtracerOpts = append(podtracerOpts, pod.ObjectMeta.Name)
+		podtracerOpts = append(podtracerOpts, "-n")
+		podtracerOpts = append(podtracerOpts, pod.ObjectMeta.Namespace)
+
+		// Temporarily listen to messages from podtracer on the operator pod
+		// with nc and write those to file. Get the operator pod's IP and serve on port 5555 for now.
+
+		// Generate the Cronjob object
+		cronJob, err := r.CronJob(podtracerOpts, pod.ObjectMeta.Name, pod.Spec.NodeName, r.Cmd.Spec.Schedule)
+		if err != nil {
+			return nil, err
+		}
+		ctrl.SetControllerReference(job, cronJob, r.Scheme)
+		cronJobs.Items = append(cronJobs.Items, *cronJob)
+	}
+	return cronJobs, nil
+}
+
+func (r *SnoopyJobReconciler) buildPodtracerOptions() []string {
+
+	podtracerOpts := []string{}
+	podtracerOpts = append(podtracerOpts, "run")
+	podtracerOpts = append(podtracerOpts, r.Cmd.Spec.Command)
+	podtracerOpts = append(podtracerOpts, "-a")
+	podtracerOpts = append(podtracerOpts, r.Cmd.Spec.Args)
+
+	if r.Cmd.Spec.Timer != "" {
+		podtracerOpts = append(podtracerOpts, "-t")
+		podtracerOpts = append(podtracerOpts, r.Cmd.Spec.Timer)
+	}
+
+	return podtracerOpts
 }
 
 func (r *SnoopyJobReconciler) GetRunningPodsByLabel(ctx context.Context, label map[string]string, namespace string) (*corev1.PodList, error) {
@@ -206,25 +171,7 @@ func (r *SnoopyJobReconciler) GetRunningPodsByLabel(ctx context.Context, label m
 func (r *SnoopyJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&jobv1alpha1.SnoopyJob{}).
+		Owns(&batchv1.CronJob{}).
+		Owns(&batchv1.Job{}).
 		Complete(r)
-}
-
-// Helper functions to check and remove string from a slice of strings.
-func containsString(slice []string, s string) bool {
-	for _, item := range slice {
-		if item == s {
-			return true
-		}
-	}
-	return false
-}
-
-func removeString(slice []string, s string) (result []string) {
-	for _, item := range slice {
-		if item == s {
-			continue
-		}
-		result = append(result, item)
-	}
-	return
 }
