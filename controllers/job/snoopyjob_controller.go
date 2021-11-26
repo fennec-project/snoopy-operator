@@ -40,16 +40,124 @@ type SnoopyJobReconciler struct {
 //+kubebuilder:rbac:groups=job.fennecproject.io,resources=snoopyjobs/finalizers,verbs=update
 
 func (r *SnoopyJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+<<<<<<< HEAD
 
 	snoopyJob := &jobv1alpha1.SnoopyJob{}
 
 	err := r.Client.Get(ctx, req.NamespacedName, snoopyJob)
+=======
+
+	// get SnoopyJobs
+	job := &jobv1alpha1.SnoopyJob{}
+	err := r.Client.Get(ctx, req.NamespacedName, job)
+>>>>>>> a3ed996fe7c5677a2ca1789929664786f7ba8bdc
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return reconcile.Result{}, nil
 		}
+
 		return ctrl.Result{}, err
 	}
+<<<<<<< HEAD
+=======
+
+	cronJobs, err := r.BuildCronJobForPods(job)
+	if err != nil {
+		return ctrl.Result{Requeue: true}, err
+	}
+
+	if err = r.ReconcileCronJobs(cronJobs); err != nil {
+		return ctrl.Result{Requeue: true}, err
+	}
+
+	// ****** BuildJobForPods(podlist *corev1.PodList, podtracerOpts []string) *[]batchv1.Job
+
+	return ctrl.Result{Requeue: false}, nil
+}
+
+func (r *SnoopyJobReconciler) ReconcileCronJobs(cronJobs *batchv1.CronJobList) error {
+
+	for _, cronJob := range cronJobs.Items {
+		// Create the Job in k8s api
+		err := r.Client.Create(context.Background(), &cronJob)
+		if err != nil {
+			fmt.Println(err.Error())
+			return err
+		}
+
+		// Updating Status field after creating
+		r.Cmd.Status.CronJobList = append(r.Cmd.Status.CronJobList, cronJob.ObjectMeta.Name)
+		err = r.Client.Status().Update(context.Background(), r.Cmd)
+		if err != nil {
+			return nil
+		}
+	}
+
+	return nil
+}
+
+func (r *SnoopyJobReconciler) BuildCronJobForPods(job *jobv1alpha1.SnoopyJob) (*batchv1.CronJobList, error) {
+
+	// Running reconciliation tasks
+	// Target pod list by label and namespace
+	podlist, err := r.GetRunningPodsByLabel(context.TODO(), job.Spec.LabelSelector, job.Spec.TargetNamespace)
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil, err
+	}
+
+	cronJobs := &batchv1.CronJobList{}
+	// CronJob creation by target pod
+	for _, pod := range podlist.Items {
+
+		// Build the command with arguments for podtracer
+
+		podtracerOpts := r.buildPodtracerOptions()
+
+		podtracerOpts = append(podtracerOpts, "--pod")
+		podtracerOpts = append(podtracerOpts, pod.ObjectMeta.Name)
+		podtracerOpts = append(podtracerOpts, "-n")
+		podtracerOpts = append(podtracerOpts, pod.ObjectMeta.Namespace)
+
+		// Temporarily listen to messages from podtracer on the operator pod
+		// with nc and write those to file. Get the operator pod's IP and serve on port 5555 for now.
+
+		// Generate the Cronjob object
+		cronJob, err := r.CronJob(podtracerOpts, pod.ObjectMeta.Name, pod.Spec.NodeName, r.Cmd.Spec.Schedule)
+		if err != nil {
+			return nil, err
+		}
+		ctrl.SetControllerReference(job, cronJob, r.Scheme)
+		cronJobs.Items = append(cronJobs.Items, *cronJob)
+	}
+	return cronJobs, nil
+}
+
+func (r *SnoopyJobReconciler) buildPodtracerOptions() []string {
+
+	podtracerOpts := []string{}
+	podtracerOpts = append(podtracerOpts, "run")
+	podtracerOpts = append(podtracerOpts, r.Cmd.Spec.Command)
+	podtracerOpts = append(podtracerOpts, "-a")
+	podtracerOpts = append(podtracerOpts, r.Cmd.Spec.Args)
+
+	if r.Cmd.Spec.Timer != "" {
+		podtracerOpts = append(podtracerOpts, "-t")
+		podtracerOpts = append(podtracerOpts, r.Cmd.Spec.Timer)
+	}
+
+	return podtracerOpts
+}
+
+func (r *SnoopyJobReconciler) GetRunningPodsByLabel(ctx context.Context, label map[string]string, namespace string) (*corev1.PodList, error) {
+
+	podlist := &corev1.PodList{}
+	listOpts := []client.ListOption{
+		client.MatchingLabels(label),
+		client.InNamespace(namespace),
+		// client.MatchingFields{"phase": "Running"}, // TODO: TSHOOT contantly returning status.phase doesn't exist...
+	}
+>>>>>>> a3ed996fe7c5677a2ca1789929664786f7ba8bdc
 
 	cronJobs, err := r.buildCronJobForPods(snoopyJob)
 	if err != nil {
@@ -71,6 +179,9 @@ func (r *SnoopyJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&jobv1alpha1.SnoopyJob{}).
 		Owns(&batchv1.CronJob{}).
 		Owns(&batchv1.Job{}).
+<<<<<<< HEAD
 		WithOptions(controller.Options{MaxConcurrentReconciles: 1}).
+=======
+>>>>>>> a3ed996fe7c5677a2ca1789929664786f7ba8bdc
 		Complete(r)
 }
