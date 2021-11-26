@@ -6,9 +6,87 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+func (r *SnoopyJobReconciler) Job(podtracerArgsList []string, targetPodName string, targetNodeName string) (*batchv1.Job, error) {
+
+	jobTemplateSpec, err := r.JobTemplateSpec(podtracerArgsList, targetPodName, targetNodeName)
+	if err != nil {
+		return nil, err
+	}
+
+	job := &batchv1.Job{
+		ObjectMeta: jobTemplateSpec.ObjectMeta,
+		Spec:       jobTemplateSpec.Spec,
+	}
+
+	return job, nil
+}
+
 func (r *SnoopyJobReconciler) CronJob(podtracerArgsList []string, targetPodName string, targetNodeName string, schedule string) (*batchv1.CronJob, error) {
 
 	var CronJob *batchv1.CronJob
+
+	// CronJobSpec vars
+	var StartingDeadlineSeconds *int64
+	ConcurrencyPolicy := batchv1.ReplaceConcurrent
+	var Suspend *bool
+	var SuccessfulJobsHistoryLimit *int32
+	var FailedJobsHistoryLimit *int32
+
+	jobTemplateSpec, err := r.JobTemplateSpec(podtracerArgsList, targetPodName, targetNodeName)
+	if err != nil {
+		return nil, err
+	}
+
+	CronJob = &batchv1.CronJob{
+
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "snoopy-cronjob-" + targetPodName,
+			Labels: map[string]string{
+				"snoopyCronJob": "SnoopyJob",
+			},
+			Namespace: "snoopy-operator",
+		},
+
+		Spec: batchv1.CronJobSpec{
+			// The schedule in Cron format, see https://en.wikipedia.org/wiki/Cron.
+			Schedule: schedule,
+
+			// Optional deadline in seconds for starting the job if it misses scheduled
+			// time for any reason.  Missed jobs executions will be counted as failed ones.
+			// optional
+			StartingDeadlineSeconds: StartingDeadlineSeconds,
+
+			// Specifies how to treat concurrent executions of a Job.
+			// Valid values are:
+			// - "Allow" (default): allows CronJobs to run concurrently;
+			// - "Forbid": forbids concurrent runs, skipping next run if previous run hasn't finished yet;
+			// - "Replace": cancels currently running job and replaces it with a new one
+			// optional
+			ConcurrencyPolicy: ConcurrencyPolicy,
+
+			// This flag tells the controller to suspend subsequent executions, it does
+			// not apply to already started executions. Defaults to false.
+			// optional
+			Suspend: Suspend,
+
+			// Specifies the job that will be created when executing a CronJob.
+			JobTemplate: *jobTemplateSpec,
+
+			// The number of successful finished jobs to retain.
+			// This is a pointer to distinguish between explicit zero and not specified.
+			// optional
+			SuccessfulJobsHistoryLimit: SuccessfulJobsHistoryLimit,
+
+			// The number of failed finished jobs to retain.
+			// This is a pointer to distinguish between explicit zero and not specified.
+			// optional
+			FailedJobsHistoryLimit: FailedJobsHistoryLimit,
+		},
+	}
+	return CronJob, nil
+}
+
+func (r *SnoopyJobReconciler) JobTemplateSpec(podtracerArgsList []string, targetPodName string, targetNodeName string) (*batchv1.JobTemplateSpec, error) {
 	var privileged bool
 	var HostPathDirectory corev1.HostPathType
 	var HostPathSocket corev1.HostPathType
@@ -105,58 +183,5 @@ func (r *SnoopyJobReconciler) CronJob(podtracerArgsList []string, targetPodName 
 		Spec: JobSpec,
 	}
 
-	// CronJobSpec vars
-	var StartingDeadlineSeconds *int64
-	ConcurrencyPolicy := batchv1.ReplaceConcurrent
-	var Suspend *bool
-	var SuccessfulJobsHistoryLimit *int32
-	var FailedJobsHistoryLimit *int32
-
-	CronJob = &batchv1.CronJob{
-
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "snoopy-cronjob-" + targetPodName,
-			Labels: map[string]string{
-				"snoopyCronJob": "SnoopyJob",
-			},
-			Namespace: "snoopy-operator",
-		},
-
-		Spec: batchv1.CronJobSpec{
-			// The schedule in Cron format, see https://en.wikipedia.org/wiki/Cron.
-			Schedule: schedule,
-
-			// Optional deadline in seconds for starting the job if it misses scheduled
-			// time for any reason.  Missed jobs executions will be counted as failed ones.
-			// optional
-			StartingDeadlineSeconds: StartingDeadlineSeconds,
-
-			// Specifies how to treat concurrent executions of a Job.
-			// Valid values are:
-			// - "Allow" (default): allows CronJobs to run concurrently;
-			// - "Forbid": forbids concurrent runs, skipping next run if previous run hasn't finished yet;
-			// - "Replace": cancels currently running job and replaces it with a new one
-			// optional
-			ConcurrencyPolicy: ConcurrencyPolicy,
-
-			// This flag tells the controller to suspend subsequent executions, it does
-			// not apply to already started executions. Defaults to false.
-			// optional
-			Suspend: Suspend,
-
-			// Specifies the job that will be created when executing a CronJob.
-			JobTemplate: JobTemplateSpec,
-
-			// The number of successful finished jobs to retain.
-			// This is a pointer to distinguish between explicit zero and not specified.
-			// optional
-			SuccessfulJobsHistoryLimit: SuccessfulJobsHistoryLimit,
-
-			// The number of failed finished jobs to retain.
-			// This is a pointer to distinguish between explicit zero and not specified.
-			// optional
-			FailedJobsHistoryLimit: FailedJobsHistoryLimit,
-		},
-	}
-	return CronJob, nil
+	return &JobTemplateSpec, nil
 }
