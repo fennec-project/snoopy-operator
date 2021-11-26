@@ -72,8 +72,8 @@ func (r *SnoopyJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		if err = r.reconcileJobs(snoopyJob, jobs); err != nil {
 			return ctrl.Result{Requeue: true}, err
 		}
-	}
 
+	}
 	return ctrl.Result{Requeue: false}, nil
 }
 

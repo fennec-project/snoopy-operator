@@ -9,5 +9,5 @@ spec:
     networkMonitor: "true",
     }
   targetNamespace: cnf-telco
-  # schedule: "*/2 * * * *"
+  schedule: "*/2 * * * *"
   timer: "60s"
