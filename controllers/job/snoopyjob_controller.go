@@ -26,7 +26,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 // SnoopyJobReconciler reconciles a SnoopyJob object
@@ -46,21 +45,34 @@ func (r *SnoopyJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	err := r.Client.Get(ctx, req.NamespacedName, snoopyJob)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			return reconcile.Result{}, nil
+			return ctrl.Result{}, nil
 		}
+
 		return ctrl.Result{}, err
 	}
 
-	cronJobs, err := r.buildCronJobForPods(snoopyJob)
-	if err != nil {
-		return ctrl.Result{Requeue: true}, err
-	}
+	if snoopyJob.Spec.Schedule != "" {
 
-	if err = r.reconcileCronJobs(snoopyJob, cronJobs); err != nil {
-		return ctrl.Result{Requeue: true}, err
-	}
+		cronJobs, err := r.buildCronJobForPods(snoopyJob)
+		if err != nil {
+			return ctrl.Result{Requeue: true}, err
+		}
 
-	// ****** BuildJobForPods(podlist *corev1.PodList, podtracerOpts []string) *[]batchv1.Job
+		if err = r.reconcileCronJobs(snoopyJob, cronJobs); err != nil {
+			return ctrl.Result{Requeue: true}, err
+		}
+
+	} else {
+
+		jobs, err := r.buildJobForPods(snoopyJob)
+		if err != nil {
+			return ctrl.Result{Requeue: true}, err
+		}
+
+		if err = r.reconcileJobs(snoopyJob, jobs); err != nil {
+			return ctrl.Result{Requeue: true}, err
+		}
+	}
 
 	return ctrl.Result{Requeue: false}, nil
 }

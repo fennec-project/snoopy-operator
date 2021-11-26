@@ -7,6 +7,8 @@ import (
 	jobv1alpha1 "github.com/fennec-project/snoopy-operator/apis/job/v1alpha1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	apimachinery "k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -15,17 +17,55 @@ func (r *SnoopyJobReconciler) reconcileCronJobs(snoopyJob *jobv1alpha1.SnoopyJob
 
 	for _, cronJob := range cronJobs.Items {
 
-		err := r.Client.Create(context.Background(), &cronJob)
+		err := r.Client.Get(context.TODO(), apimachinery.NamespacedName{Namespace: cronJob.ObjectMeta.Namespace, Name: cronJob.ObjectMeta.Name}, &cronJob)
 		if err != nil {
-			fmt.Println(err.Error())
-			return err
-		}
+			if errors.IsNotFound(err) {
+				err = r.Client.Create(context.Background(), &cronJob)
+				if err != nil {
+					fmt.Println(err.Error())
+					return err
+				}
 
-		// Updating Status
-		snoopyJob.Status.CronJobList = append(snoopyJob.Status.CronJobList, cronJob.ObjectMeta.Name)
-		err = r.Client.Status().Update(context.Background(), snoopyJob)
+				// Updating Status
+				snoopyJob.Status.CronJobList = append(snoopyJob.Status.CronJobList, cronJob.ObjectMeta.Name)
+				err = r.Client.Status().Update(context.Background(), snoopyJob)
+				if err != nil {
+					return nil
+				}
+			} else {
+
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (r *SnoopyJobReconciler) reconcileJobs(snoopyJob *jobv1alpha1.SnoopyJob, jobs *batchv1.JobList) error {
+
+	for _, job := range jobs.Items {
+
+		err := r.Client.Get(context.TODO(), apimachinery.NamespacedName{Namespace: job.ObjectMeta.Namespace, Name: job.ObjectMeta.Name}, &job)
 		if err != nil {
-			return nil
+			if errors.IsNotFound(err) {
+
+				err = r.Client.Create(context.Background(), &job)
+				if err != nil {
+					fmt.Println(err.Error())
+					return err
+				}
+
+				// Updating Status
+				snoopyJob.Status.CronJobList = append(snoopyJob.Status.CronJobList, job.ObjectMeta.Name)
+				err = r.Client.Status().Update(context.Background(), snoopyJob)
+				if err != nil {
+					return err
+				}
+
+			} else {
+				return err
+			}
 		}
 	}
 
@@ -66,6 +106,42 @@ func (r *SnoopyJobReconciler) buildCronJobForPods(snoopyJob *jobv1alpha1.SnoopyJ
 		cronJobs.Items = append(cronJobs.Items, *cronJob)
 	}
 	return cronJobs, nil
+}
+
+func (r *SnoopyJobReconciler) buildJobForPods(snoopyJob *jobv1alpha1.SnoopyJob) (*batchv1.JobList, error) {
+
+	// Running reconciliation tasks
+	// Target pod list by label and namespace
+	podlist, err := r.getRunningPodsByLabel(context.TODO(), snoopyJob.Spec.LabelSelector, snoopyJob.Spec.TargetNamespace)
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil, err
+	}
+
+	jobs := &batchv1.JobList{}
+	// CronJob creation by target pod
+	for _, pod := range podlist.Items {
+
+		// Build the command with arguments for podtracer
+		podtracerOpts := r.buildPodtracerOptions(snoopyJob)
+
+		podtracerOpts = append(podtracerOpts, "--pod")
+		podtracerOpts = append(podtracerOpts, pod.ObjectMeta.Name)
+		podtracerOpts = append(podtracerOpts, "-n")
+		podtracerOpts = append(podtracerOpts, pod.ObjectMeta.Namespace)
+
+		// Generate the Cronjob object
+		job, err := r.Job(podtracerOpts, pod.ObjectMeta.Name, pod.Spec.NodeName)
+		if err != nil {
+			return nil, err
+		}
+		if err := ctrl.SetControllerReference(snoopyJob, job, r.Scheme); err != nil {
+			return nil, err
+		}
+
+		jobs.Items = append(jobs.Items, *job)
+	}
+	return jobs, nil
 }
 
 func (r *SnoopyJobReconciler) buildPodtracerOptions(snoopyJob *jobv1alpha1.SnoopyJob) []string {
