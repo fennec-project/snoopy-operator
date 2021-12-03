@@ -45,6 +45,13 @@ spec:
                   in the context of a Pod Warning: The command must be present in
                   the used potracer image for it to be used'
                 type: string
+              dataServiceIP:
+                description: Ip address for the DataEndpoint where to send collected
+                  data
+                type: string
+              dataServicePort:
+                description: Port used by the data service on the data endpoint
+                type: string
               labelSelector:
                 additionalProperties:
                   type: string

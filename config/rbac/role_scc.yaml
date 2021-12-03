@@ -23,7 +23,7 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: snoopy-operator-scc-priv
+  name: role-scc-privileged
 subjects:
   - kind: ServiceAccount
     name: snoopy-operator-sa

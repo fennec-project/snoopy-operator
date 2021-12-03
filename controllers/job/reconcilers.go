@@ -157,6 +157,13 @@ func (r *SnoopyJobReconciler) buildPodtracerOptions(snoopyJob *jobv1alpha1.Snoop
 		podtracerOpts = append(podtracerOpts, snoopyJob.Spec.Timer)
 	}
 
+	if snoopyJob.Spec.DataServiceIP != "" {
+		podtracerOpts = append(podtracerOpts, "-d")
+		podtracerOpts = append(podtracerOpts, snoopyJob.Spec.DataServiceIP)
+		podtracerOpts = append(podtracerOpts, "-p")
+		podtracerOpts = append(podtracerOpts, snoopyJob.Spec.DataServicePort)
+	}
+
 	return podtracerOpts
 }
 
