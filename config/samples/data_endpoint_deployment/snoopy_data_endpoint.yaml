@@ -21,11 +21,9 @@ spec:
       serviceAccountName: snoopy-operator-sa
       containers:
       - command:
-        - /bin/bash
-        - -c 
-        - --
+        - /server
         args:
-        - "while true; do sleep 30; done;"
+        - "51001"
         ports:
         - containerPort: 51001
         image: "quay.io/fennec-project/snoopy-data-endpoint:0.0.1"

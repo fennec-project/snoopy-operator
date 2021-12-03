@@ -37,23 +37,17 @@ spec:
           spec:
             description: SnoopyDataEndpointSpec defines the desired state of SnoopyDataEndpoint
             properties:
-              dataEndpointType:
-                description: 'DataEnpointType indicates internal snoopy defined data
-                  receivers raw mode listens on the given port and stores on give
-                  file path TODO: possible future implementations kafka, ELK stack
-                  etc.'
+              serviceName:
+                description: ServiceName is used to create the service for the gRPC
+                  endpoint
                 type: string
-              rawReceivers:
-                description: Raw Receivers take raw traffic on designated port and
-                  path
-                items:
-                  properties:
-                    filePath:
-                      type: string
-                    port:
-                      type: string
-                  type: object
-                type: array
+              servicePort:
+                description: ServicePort is the exposed port on the service
+                format: int32
+                type: integer
+            required:
+            - serviceName
+            - servicePort
             type: object
           status:
             description: SnoopyDataEndpointStatus defines the observed state of SnoopyDataEndpoint

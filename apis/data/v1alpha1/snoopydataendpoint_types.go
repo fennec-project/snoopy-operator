@@ -28,13 +28,11 @@ type RawReceiver struct {
 // SnoopyDataEndpointSpec defines the desired state of SnoopyDataEndpoint
 type SnoopyDataEndpointSpec struct {
 
-	// DataEnpointType indicates internal snoopy defined data receivers
-	// raw mode listens on the given port and stores on give file path
-	// TODO: possible future implementations kafka, ELK stack etc.
-	DataEndpointType string `json:"dataEndpointType,omitempty"`
+	// ServiceName is used to create the service for the gRPC endpoint
+	ServiceName string `json:"serviceName"`
 
-	// Raw Receivers take raw traffic on designated port and path
-	RawReceivers []RawReceiver `json:"rawReceivers,omitempty"`
+	// ServicePort is the exposed port on the service
+	ServicePort int32 `json:"servicePort"`
 }
 
 // SnoopyDataEndpointStatus defines the observed state of SnoopyDataEndpoint
