@@ -44,6 +44,12 @@ type SnoopyJobSpec struct {
 	// Timer sets how much time to run the specified command.
 	// Valid example values are 10s, 2m, 1h etc.
 	Timer string `json:"timer,omitempty"`
+
+	// Ip address for the DataEndpoint where to send collected data
+	DataServiceIP string `json:"dataServiceIP,omitempty"`
+
+	// Port used by the data service on the data endpoint
+	DataServicePort string `json:"dataServicePort,omitempty"`
 }
 
 // SnoopyJobStatus defines the observed state of SnoopyJob

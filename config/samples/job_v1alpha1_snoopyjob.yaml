@@ -4,10 +4,11 @@ metadata:
   name: snoopy-samplejob
 spec:
   command: "tcpdump"
-  args: "-i eth0"
+  args: "-n -i eth0"
   labelSelector: { 
     networkMonitor: "true",
     }
   targetNamespace: cnf-telco
-  schedule: "*/2 * * * *"
-  timer: "60s"
+  timer: "2m"
+  dataServiceIP: "172.30.233.114"
+  dataServicePort: "51001"
