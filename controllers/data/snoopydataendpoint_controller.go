@@ -19,23 +19,22 @@ package data
 import (
 	"context"
 
+	datav1alpha1 "github.com/fennec-project/snoopy-operator/apis/data/v1alpha1"
+	zap "go.uber.org/zap"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	datav1alpha1 "github.com/fennec-project/snoopy-operator/apis/data/v1alpha1"
-
-	zap "go.uber.org/zap"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 // SnoopyDataEndpointReconciler reconciles a SnoopyDataEndpoint object
 type SnoopyDataEndpointReconciler struct {
 	client.Client
-	Scheme       *runtime.Scheme
-	DataEndpoint *datav1alpha1.SnoopyDataEndpoint
+	Scheme *runtime.Scheme
 }
 
 //+kubebuilder:rbac:groups=data.fennecproject.io,resources=snoopydataendpoints,verbs=get;list;watch;create;update;patch;delete
@@ -61,8 +60,8 @@ func (r *SnoopyDataEndpointReconciler) Reconcile(ctx context.Context, req ctrl.R
 	logger.Info("Checking for new Snoopy Data Endpoints")
 
 	// get DataEndpoints
-	r.DataEndpoint = &datav1alpha1.SnoopyDataEndpoint{}
-	err := r.Client.Get(ctx, req.NamespacedName, r.DataEndpoint)
+	DataEndpoint := &datav1alpha1.SnoopyDataEndpoint{}
+	err := r.Client.Get(ctx, req.NamespacedName, DataEndpoint)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
@@ -70,44 +69,18 @@ func (r *SnoopyDataEndpointReconciler) Reconcile(ctx context.Context, req ctrl.R
 			// Return and don't requeue
 			return reconcile.Result{}, nil
 		}
-		return ctrl.Result{}, err
+		return ctrl.Result{Requeue: true}, err
 	}
 
-	// Check for deletion timestamp and finalizers
-	finalizer := "snoopydataendpoint.job.fennecproject.io"
-	if r.DataEndpoint.ObjectMeta.DeletionTimestamp.IsZero() {
+	// Reconcile Deployment for registry-service
+	deploymentForDataEndpoint := &appsv1.Deployment{}
+	objectMeta := setObjectMeta("snoopy-data", "snoopy-operator", map[string]string{"app": "snoopy-data"})
+	r.reconcileResource(r.deploymentForDataEndpoint, DataEndpoint, deploymentForDataEndpoint, objectMeta)
 
-		// DataEndpoint is not being deleted, so if it does not have our finalizer,
-		// then lets add the finalizer and update the object. This is equivalent
-		// registering our finalizer.
-
-		if !containsString(r.DataEndpoint.GetFinalizers(), finalizer) {
-
-			logger.Info("New DataEndpoint found setting finalizers")
-
-			r.DataEndpoint.SetFinalizers(append(r.DataEndpoint.GetFinalizers(), finalizer))
-			if err := r.Update(context.Background(), r.DataEndpoint); err != nil {
-				return ctrl.Result{Requeue: true}, err
-			}
-			// Running reconciliation tasks
-
-		}
-
-	} else {
-		// DataEndpoint is being deleted
-		if containsString(r.DataEndpoint.GetFinalizers(), finalizer) {
-
-			// remove our finalizer from the list and update it.
-			r.DataEndpoint.SetFinalizers(removeString(r.DataEndpoint.GetFinalizers(), finalizer))
-			if err := r.Update(context.Background(), r.DataEndpoint); err != nil {
-				return ctrl.Result{Requeue: true}, err
-			}
-		}
-	}
-
-	// Log User Info message when job is being deleted or registering finalizer
-
-	// List Target Pods matching labels on selected namespace
+	// Reconcile Deployment for registry-service
+	svcForDataEndpoint := &corev1.Service{}
+	objectMeta = setObjectMeta("snoopy-data-svc", "snoopy-operator", map[string]string{"app": "snoopy-data"})
+	r.reconcileResource(r.serviceForDataEndpoint, DataEndpoint, svcForDataEndpoint, objectMeta)
 
 	return ctrl.Result{}, nil
 }
@@ -116,25 +89,7 @@ func (r *SnoopyDataEndpointReconciler) Reconcile(ctx context.Context, req ctrl.R
 func (r *SnoopyDataEndpointReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&datav1alpha1.SnoopyDataEndpoint{}).
+		Owns(&corev1.Service{}).
+		Owns(&appsv1.Deployment{}).
 		Complete(r)
-}
-
-// Helper functions to check and remove string from a slice of strings.
-func containsString(slice []string, s string) bool {
-	for _, item := range slice {
-		if item == s {
-			return true
-		}
-	}
-	return false
-}
-
-func removeString(slice []string, s string) (result []string) {
-	for _, item := range slice {
-		if item == s {
-			continue
-		}
-		result = append(result, item)
-	}
-	return
 }

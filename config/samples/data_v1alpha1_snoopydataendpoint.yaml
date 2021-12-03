@@ -3,5 +3,5 @@ kind: SnoopyDataEndpoint
 metadata:
   name: snoopydataendpoint-sample
 spec:
-  dataEndpointType: raw
-  port: 5555
+  serviceName: snoopy-data-svc
+  servicePort: 51001
