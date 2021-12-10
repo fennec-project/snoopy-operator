@@ -1,5 +1,9 @@
 # snoopy-operator
 
+### Community Meetings
+
+Public calendar with regular meetings for 2022 will be available soon. We'll be back in January 14! Happy Holidays! 
+
 ---
 
 ### A Cloud Native Way for Pod Deep Inspection
@@ -197,11 +201,5 @@ cnf-example-pod-6796b4cb8f-n7dk8  etc                               mnt         
 cnf-example-pod-6796b4cb8f-p88z4  home                              opt                               server                            var
 cnf-example-pod-6796b4cb8f-tmthn  lib                               proc                              srv
 ```
-
-
-
-### Contribution
-
-Regular meetings, slack channel and YouTube channel coming soon.
 
 
