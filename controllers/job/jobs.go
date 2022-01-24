@@ -123,12 +123,6 @@ func (r *SnoopyJobReconciler) JobTemplateSpec(podtracerArgsList []string, target
 						{Name: "crio-sock",
 							MountPath: "/var/run/crio/crio.sock",
 							ReadOnly:  false},
-						{Name: "pcap-data",
-							MountPath: "/pcap-data",
-							ReadOnly:  false},
-						// {Name: "kubeconfig",
-						// 	MountPath: "/root/.kube",
-						// 	ReadOnly:  false},
 					},
 				},
 			},
@@ -147,20 +141,6 @@ func (r *SnoopyJobReconciler) JobTemplateSpec(podtracerArgsList []string, target
 						HostPath: &corev1.HostPathVolumeSource{
 							Path: "/var/run/crio/crio.sock",
 							Type: &HostPathSocket,
-						},
-					},
-				},
-				{
-					Name: "pcap-data",
-					VolumeSource: corev1.VolumeSource{
-						EmptyDir: &corev1.EmptyDirVolumeSource{},
-					},
-				},
-				{
-					Name: "kubeconfig",
-					VolumeSource: corev1.VolumeSource{
-						Secret: &corev1.SecretVolumeSource{
-							SecretName: "podtracer-kubeconfig",
 						},
 					},
 				},
