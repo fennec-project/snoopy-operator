@@ -20,7 +20,6 @@ import (
 	"context"
 
 	datav1alpha1 "github.com/fennec-project/snoopy-operator/apis/data/v1alpha1"
-	zap "go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -51,37 +50,46 @@ type SnoopyDataEndpointReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.9.2/pkg/reconcile
 func (r *SnoopyDataEndpointReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	Log := log.FromContext(ctx).WithValues("method", "reconcile")
 
-	logger, _ := zap.NewProduction()
-	defer logger.Sync()
-
-	// Log User Info message about new jobs
-	logger.Info("Checking for new Snoopy Data Endpoints")
+	Log.V(2).Info("Initiating reconciliation...")
 
 	// get DataEndpoints
 	DataEndpoint := &datav1alpha1.SnoopyDataEndpoint{}
+	Log.V(2).Info("Looking for DataEndpoint CRs")
+
 	err := r.Client.Get(ctx, req.NamespacedName, DataEndpoint)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
+
 			return reconcile.Result{}, nil
 		}
+		Log.Error(err, "Error requesting DataEndpoint")
 		return ctrl.Result{Requeue: true}, err
 	}
 
-	// Reconcile Deployment for registry-service
+	// Reconcile Deployment for SnoopyDataEndpoint
 	deploymentForDataEndpoint := &appsv1.Deployment{}
 	objectMeta := setObjectMeta("snoopy-data", "snoopy-operator", map[string]string{"app": "snoopy-data"})
-	r.reconcileResource(r.deploymentForDataEndpoint, DataEndpoint, deploymentForDataEndpoint, objectMeta)
+	err = r.reconcileResource(ctx, r.deploymentForDataEndpoint, DataEndpoint, deploymentForDataEndpoint, objectMeta)
+	if err != nil {
+		Log.Error(err, "Error reconciling deployment for SnoopyDataEndpoint...")
+		return reconcile.Result{Requeue: true}, err
+	}
 
-	// Reconcile Deployment for registry-service
+	// Reconcile Service for SnoopyDataEndpoint
 	svcForDataEndpoint := &corev1.Service{}
 	objectMeta = setObjectMeta("snoopy-data-svc", "snoopy-operator", map[string]string{"app": "snoopy-data"})
-	r.reconcileResource(r.serviceForDataEndpoint, DataEndpoint, svcForDataEndpoint, objectMeta)
+	err = r.reconcileResource(ctx, r.serviceForDataEndpoint, DataEndpoint, svcForDataEndpoint, objectMeta)
+	if err != nil {
+		Log.Error(err, "Error reconciling deployment for SnoopyDataEndpoint...")
+		return reconcile.Result{Requeue: true}, err
+	}
 
+	Log.V(2).Info("Reconciliation done successfully")
 	return ctrl.Result{}, nil
 }
 
