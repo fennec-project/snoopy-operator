@@ -26,6 +26,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // SnoopyJobReconciler reconciles a SnoopyJob object
@@ -39,15 +40,19 @@ type SnoopyJobReconciler struct {
 //+kubebuilder:rbac:groups=job.fennecproject.io,resources=snoopyjobs/finalizers,verbs=update
 
 func (r *SnoopyJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	Log := log.FromContext(ctx).WithValues("method", "reconcile")
+
+	Log.V(2).Info("Initiating reconciliation...")
 
 	snoopyJob := &jobv1alpha1.SnoopyJob{}
+	Log.V(2).Info("Looking for snoopyJob CRs")
 
 	err := r.Client.Get(ctx, req.NamespacedName, snoopyJob)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return ctrl.Result{}, nil
 		}
-
+		Log.Error(err, "Error requesting SnoopyJob")
 		return ctrl.Result{}, err
 	}
 
@@ -55,24 +60,28 @@ func (r *SnoopyJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 		cronJobs, err := r.buildCronJobForPods(snoopyJob)
 		if err != nil {
+			Log.Error(err, "Error building cronJob for SnoopyJob")
 			return ctrl.Result{Requeue: true}, err
 		}
-
+		Log.Info("Creating CronJob for SnoopyJob")
 		if err = r.reconcileCronJobs(snoopyJob, cronJobs); err != nil {
+			Log.Error(err, "Error reconciling cronJob for SnoopyJob")
 			return ctrl.Result{Requeue: true}, err
 		}
-
+		Log.Info("CronJob for SnoopyJob created successfully")
 	} else {
 
 		jobs, err := r.buildJobForPods(snoopyJob)
 		if err != nil {
+			Log.Error(err, "Error building Job for SnoopyJob")
 			return ctrl.Result{Requeue: true}, err
 		}
-
+		Log.Info("Creating Job for SnoopyJob")
 		if err = r.reconcileJobs(snoopyJob, jobs); err != nil {
+			Log.Error(err, "Error reconciling Job for SnoopyJob")
 			return ctrl.Result{Requeue: true}, err
 		}
-
+		Log.Info("Job for SnoopyJob created successfully")
 	}
 	return ctrl.Result{Requeue: false}, nil
 }
