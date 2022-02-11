@@ -52,7 +52,7 @@ func (s server) ExportPodData(srv pb.DataEndpoint_ExportPodDataServer) error {
 		// log.Printf("Received data for pod %v", pd.Name)
 
 		// open a file to write and append podData
-		f, err := os.OpenFile(pd.Name, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		f, err := os.OpenFile("/pcap/"+pd.Name, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
 		if err != nil {
 			fmt.Print(err.Error())
 			log.Fatal("Error openning file to write data on server.")

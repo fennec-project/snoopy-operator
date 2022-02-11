@@ -1,6 +1,12 @@
 
 all: client server
 
+podman-build:
+	podman build ./server/ -t quay.io/fennec-project/snoopy-data-endpoint:0.0.1-4
+
+podman-push:
+	podman push quay.io/fennec-project/snoopy-data-endpoint:0.0.1-4
+
 protoc:
 	@echo "Generating Go files"
 	cd proto && protoc --go_out=. --go-grpc_out=. \
