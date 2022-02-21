@@ -10,5 +10,5 @@ spec:
     }
   targetNamespace: cnf-telco
   timer: "30s"
-  dataServiceIP: "172.30.30.60"
+  dataServiceIP: "172.30.61.241"
   dataServicePort: "51001"

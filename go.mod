@@ -5,8 +5,7 @@ go 1.16
 require (
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.16.0
-	go.uber.org/zap v1.19.1
-	golang.org/x/net v0.0.0-20210520170846-37e1c6afe023 // indirect
+	go.uber.org/zap v1.19.1 // indirect
 	google.golang.org/grpc v1.38.0
 	google.golang.org/protobuf v1.26.0
 	k8s.io/api v0.22.2

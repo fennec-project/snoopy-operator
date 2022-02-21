@@ -101,9 +101,7 @@ cd snoopy-operator
 
 You can use the sample deployment that can be found at config/samples/sample-deployment.yaml. It will create a namespace called cnf-telco, a service account and a sample deployment with 2 Pods. They are already labeled with the labels used with the other CR examples in order to be found by Snoopy Operator. They are not running any particular command only sleep indefinitely for you to login into them and run any commands available and permit to be run. You might simply ping to generate some traffic or run iperf by hand from them or replace the command and args on the Deployment definition for any entry point you would like to. The image for those containers is the one found [here](https://github.com/nicolaka/netshoot) Just remember that the sample deployment doesn't have special privileges and can't do root tasks. That would require some RBAC configuration.
 
-Please ensure on the target nodes that you have labeled them with `cnf-telco=true`
-
-After crafting the sample deployment with possible desired changes, if that's the case, run:
+After crafting the sample deployment with desired changes, if that's the case, run:
 ```
 kubectl apply -f config/samples/sample-deployment.yaml
 ```

@@ -39,5 +39,3 @@ spec:
         image: "nicolaka/netshoot:latest"
         imagePullPolicy: Always
         name: cnf-example
-      nodeSelector:
-        cnf-telco: "true"        
