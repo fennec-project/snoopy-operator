@@ -1,29 +1,12 @@
-
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: snoopy-operator-scc-priv
-  namespace: snoopy-operator
-rules:
-- apiGroups:
-  - security.openshift.io 
-  resourceNames:
-  - privileged
-  resources:
-  - securitycontextconstraints 
-  verbs: 
-  - use
----
-kind: RoleBinding
+kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: rolebinding-priv-scc-snoopy-operator
+  name: crb-scc-priv-snoopy-operator
   namespace: snoopy-operator
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: role-scc-privileged
+  kind: ClusterRole
+  name: system:openshift:scc:privileged
 subjects:
   - kind: ServiceAccount
     name: snoopy-operator-sa

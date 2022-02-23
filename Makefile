@@ -55,8 +55,6 @@ SHELL = /usr/bin/env bash -o pipefail
 
 all: build
 
-KUBECONFIG_PATH=$$HOME/.kube/config
-
 ##@ General
 
 # The help target prints out all targets with their descriptions organized
@@ -93,15 +91,21 @@ test: manifests generate fmt vet ## Run tests.
 	test -f ${ENVTEST_ASSETS_DIR}/setup-envtest.sh || curl -sSLo ${ENVTEST_ASSETS_DIR}/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.8.3/hack/setup-envtest.sh
 	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); go test ./... -coverprofile cover.out
 
-rbac_dev:
-	kubectl apply -f config/samples/rbac_snoopy_operator_dev/
-	kubectl create secret generic podtracer-kubeconfig --type=string --from-file=${KUBECONFIG_PATH} -n snoopy-operator
+rbac_only: manifests kustomize
+	$(KUSTOMIZE) build config/namespace | kubectl apply -f -
+	$(KUSTOMIZE) build config/rbac | kubectl apply -f -
 
-delete_rbac_dev:
-	kubectl delete -f config/samples/rbac_snoopy_operator_dev/
+delete_rbac_only: manifests kustomize
+	$(KUSTOMIZE) build config/rbac | kubectl delete -f -
+	$(KUSTOMIZE) build config/namespace | kubectl delete -f -
+
+sample_deployment:
+	kubectl apply -f config/samples/sample-deployment.yaml
+
+delete_sample_deployment:
+	kubectl delete -f config/samples/sample-deployment.yaml
 
 ##@ Build
-
 build: generate fmt vet ## Build manager binary.
 	go build -o bin/manager main.go
 
@@ -125,7 +129,6 @@ uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified 
 deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/default | kubectl apply -f -
-	kubectl create secret generic podtracer-kubeconfig --type=string --from-file=${KUBECONFIG_PATH} -n snoopy-operator
 
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config.
 	$(KUSTOMIZE) build config/default | kubectl delete -f -
