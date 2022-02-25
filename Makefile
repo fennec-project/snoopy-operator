@@ -105,6 +105,36 @@ sample_deployment:
 delete_sample_deployment:
 	kubectl delete -f config/samples/sample-deployment.yaml
 
+# end-to-tests
+.PHONY: kuttl
+kuttl:
+ifeq (, $(shell which kubectl-kuttl))
+	echo ${PATH}
+	ls -l /usr/local/bin
+	which kubectl-kuttl
+
+	@{ \
+	set -e ;\
+	echo "" ;\
+	echo "ERROR: kuttl not found." ;\
+	echo "Please check https://kuttl.dev/docs/cli.html for installation instructions and try again." ;\
+	echo "" ;\
+	exit 1 ;\
+	}
+else
+KUTTL=$(shell which kubectl-kuttl)
+endif
+
+.PHONY: e2e
+e2e:
+	$(KUTTL) test
+
+.PHONY: prepare-e2e
+prepare-e2e: kuttl set-test-image-vars set-image-controller container start-kind
+	mkdir -p tests/_build/crds tests/_build/manifests
+	$(KUSTOMIZE) build config/default -o tests/_build/manifests/snoopy-operator.yaml
+	$(KUSTOMIZE) build config/crd -o tests/_build/crds/
+
 ##@ Build
 build: generate fmt vet ## Build manager binary.
 	go build -o bin/manager main.go

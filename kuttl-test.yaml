@@ -1,0 +1,13 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestSuite
+crdDir: ./tests/_build/crds/
+artifactsDir: ./tests/_build/artifacts/
+kindContainers:
+  - local/snoopy-operator:e2e
+commands:
+  - command: kubectl apply -f ./tests/_build/manifests/snoopy-operator.yaml
+  - command: kubectl wait --timeout=5m --for=condition=available deployment snoopy-operator -n snoopy-operator
+  - command: sleep 5s
+testDirs:
+  - ./tests/e2e/
+timeout: 150
