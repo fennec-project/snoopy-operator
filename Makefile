@@ -55,6 +55,10 @@ SHELL = /usr/bin/env bash -o pipefail
 
 all: build
 
+## Kind Test
+KUBE_VERSION ?= 1.21
+KIND_CONFIG ?= kind-$(KUBE_VERSION).yaml
+
 ##@ General
 
 # The help target prints out all targets with their descriptions organized
@@ -124,6 +128,23 @@ ifeq (, $(shell which kubectl-kuttl))
 else
 KUTTL=$(shell which kubectl-kuttl)
 endif
+
+.PHONY: set-test-image-vars
+set-test-image-vars:
+	$(eval IMG=local/snoopy-operator:e2e)
+
+.PHONY: set-image-controller
+set-image-controller: manifests kustomize
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+
+.PHONY: container
+container:
+	docker build -t ${IMG} .
+
+.PHONY: start-kind
+start-kind:
+	kind create cluster --config $(KIND_CONFIG)
+	kind load docker-image local/snoopy-operator:e2e
 
 .PHONY: e2e
 e2e:
