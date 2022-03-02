@@ -110,6 +110,21 @@ delete_sample_deployment:
 	kubectl delete -f config/samples/sample-deployment.yaml
 
 # end-to-tests
+# go-get-tool will 'go get' any package $2 and install it to $1.
+PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
+define go-get-tool
+@[ -f $(1) ] || { \
+set -e ;\
+TMP_DIR=$$(mktemp -d) ;\
+cd $$TMP_DIR ;\
+go mod init tmp ;\
+echo "Downloading $(2)" ;\
+go get -d $(2)@$(3) ;\
+GOBIN=$(PROJECT_DIR)/bin go install $(2) ;\
+rm -rf $$TMP_DIR ;\
+}
+endef
+
 .PHONY: kuttl
 kuttl:
 ifeq (, $(shell which kubectl-kuttl))
@@ -126,6 +141,21 @@ ifeq (, $(shell which kubectl-kuttl))
 	}
 else
 KUTTL=$(shell which kubectl-kuttl)
+endif
+
+.PHONY: kind
+kind:
+ifeq (, $(shell which kind))
+	@{ \
+	set -e ;\
+	echo "" ;\
+	echo "ERROR: kind not found." ;\
+	echo "Please check https://kind.sigs.k8s.io/docs/user/quick-start/#installation for installation instructions and try again." ;\
+	echo "" ;\
+	exit 1 ;\
+	}
+else
+KIND=$(shell which kind)
 endif
 
 .PHONY: set-test-image-vars
