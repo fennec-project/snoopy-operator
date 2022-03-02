@@ -2,4 +2,11 @@ kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
 - role: control-plane
-  image: kindest/node:v1.21.2@sha256:9d07ff05e4afefbba983fac311807b3c17a5f36e7061f6cb7e2ba756255b2be4
+  image: ghcr.io/yuriolisa/kindnode/crio:1.21@sha256:f8172bf479cd092e7b602c874b7c2a62819136b274cca52e324803ed6f26efdd
+  kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration
+    nodeRegistration:
+      criSocket: unix:///run/crio/crio.sock
+      kubeletExtraArgs:
+        cgroup-driver: cgroupfs
