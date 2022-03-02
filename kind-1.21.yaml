@@ -2,7 +2,7 @@ kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
 - role: control-plane
-  image: ghcr.io/yuriolisa/kindnode/crio:1.21@sha256:f8172bf479cd092e7b602c874b7c2a62819136b274cca52e324803ed6f26efdd
+  image: ghcr.io/yuriolisa/kindnode/crio:1.21@sha256:3c43afca813cf724e02efe70bf0ee0ceee498b49ee746781f6951db5bafb6b39
   kubeadmConfigPatches:
   - |
     kind: InitConfiguration
