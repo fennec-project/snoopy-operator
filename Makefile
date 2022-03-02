@@ -173,7 +173,8 @@ container:
 .PHONY: start-kind
 start-kind:
 	kind create cluster --config $(KIND_CONFIG)
-	kind load docker-image local/snoopy-operator:e2e
+	podman save -o snoopy-operator-local.tar ${IMG}
+	podman load -i snoopy-operator-local.tar
 
 .PHONY: e2e
 e2e:
