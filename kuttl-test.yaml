@@ -8,7 +8,7 @@ commands:
   - command: kubectl apply -f ./tests/_build/manifests/snoopy-operator.yaml
   - command: sleep 10s
   - command: kubectl get deployment -n snoopy-operator
-  - command: "kubectl get deployments -n snoopy-operator snoopy-operator -o yaml"
+  - command: kubectl get deployments -n snoopy-operator snoopy-operator -o yaml
   - command: sleep 5s
   - command: kubectl get pods -n snoopy-operator -o yaml
   - command: sleep 3s
