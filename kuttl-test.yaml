@@ -6,8 +6,14 @@ kindContainers:
   - local/snoopy-operator:e2e
 commands:
   - command: kubectl apply -f ./tests/_build/manifests/snoopy-operator.yaml
+  - command: sleep 10s
+  - command: kubect get deployment -n snoopy-operator
+  - command: "kubectl get deployments -n snoopy-operator snoopy-operator -o yaml | grep image:"
+  - command: sleep 5s
+  - command: kubectl get pods -n snoopy-operator
+  - command: sleep 3s
   - command: kubectl wait --timeout=5m --for=condition=available deployment snoopy-operator -n snoopy-operator
   - command: sleep 5s
 testDirs:
   - ./tests/e2e/
-timeout: 240
+timeout: 150
