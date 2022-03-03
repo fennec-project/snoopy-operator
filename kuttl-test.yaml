@@ -7,7 +7,7 @@ kindContainers:
 commands:
   - command: kubectl apply -f ./tests/_build/manifests/snoopy-operator.yaml
   - command: sleep 10s
-  - command: kubect get deployment -n snoopy-operator
+  - command: kubectl get deployment -n snoopy-operator
   - command: "kubectl get deployments -n snoopy-operator snoopy-operator -o yaml | grep image:"
   - command: sleep 5s
   - command: kubectl get pods -n snoopy-operator
