@@ -168,7 +168,7 @@ set-image-controller: manifests kustomize
 
 .PHONY: container
 container:
-	docker build -t ${IMG} .
+	podman build -t ${IMG} .
 
 .PHONY: start-kind
 start-kind:
