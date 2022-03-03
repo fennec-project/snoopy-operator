@@ -1,0 +1,14 @@
+apiVersion: job.fennecproject.io/v1alpha1
+kind: SnoopyJob
+metadata:
+  name: snoopy-samplejob
+spec:
+  command: "tcpdump"
+  args: "-n -i eth0"
+  labelSelector: { 
+    networkMonitor: "true",
+    }
+  targetNamespace: cnf-telco
+  timer: "30s"
+  dataServiceIP: "snoopy-data-svc.snoopy-operator.svc.cluster.local"
+  dataServicePort: "51001"
