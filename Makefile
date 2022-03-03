@@ -158,10 +158,6 @@ else
 KIND=$(shell which kind)
 endif
 
-.PHONY: set-test-image-vars
-set-test-image-vars:
-	$(eval IMG=local/snoopy-operator:e2e)
-
 .PHONY: set-image-controller
 set-image-controller: manifests kustomize
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
@@ -173,15 +169,13 @@ container:
 .PHONY: start-kind
 start-kind:
 	kind create cluster --config $(KIND_CONFIG)
-	podman save -o snoopy-operator-local.tar ${IMG}
-	podman load -i snoopy-operator-local.tar
 
 .PHONY: e2e
 e2e:
 	$(KUTTL) test
 
 .PHONY: prepare-e2e
-prepare-e2e: kuttl set-test-image-vars set-image-controller container start-kind
+prepare-e2e: kuttl set-image-controller container start-kind
 	mkdir -p tests/_build/crds tests/_build/manifests
 	$(KUSTOMIZE) build config/default -o tests/_build/manifests/snoopy-operator.yaml
 	$(KUSTOMIZE) build config/crd -o tests/_build/crds/
