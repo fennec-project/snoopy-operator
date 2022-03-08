@@ -66,6 +66,6 @@ spec:
       containers:
       - name: cnf-iperf-client
         image: "nicolaka/netshoot:latest"
-        command: ["/bin/bash",  "-c", "iperf -c iperf-server-svc.cnf-telco.svc.cluster.local", "-f K -w 500K -P 2 -t 60s -i 1s"]
+        command: ["/bin/bash",  "-c", "iperf -c iperf-server-svc.cnf-telco.svc.cluster.local", "-f K -w 500K -P 2 -t 300s -i 1s"]
       restartPolicy: Never
   backoffLimit: 4
