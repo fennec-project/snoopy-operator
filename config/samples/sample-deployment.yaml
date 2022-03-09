@@ -12,7 +12,7 @@ metadata:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cnf-example-pod
+  name: cnf-iperf-server-pod
   namespace: cnf-telco
   labels:
     networkMonitor: "true"
@@ -20,10 +20,10 @@ spec:
   selector:
     matchLabels:
       networkMonitor: "true"
-  replicas: 2
+  replicas: 1
   template:
     metadata:
-      name: cnf-example-pod
+      name: cnf-iperf-server-pod
       namespace: cnf-telco
       labels:
         networkMonitor: "true"
@@ -31,11 +31,41 @@ spec:
       serviceAccountName: cnf-telco-sa
       containers:
       - command:
-        - /bin/bash 
-        - -c 
+        - /bin/bash
+        - -c
         - --
         args:
-        - "while true; do sleep 30; done;"
+        - "iperf -s"
         image: "nicolaka/netshoot:latest"
         imagePullPolicy: Always
-        name: cnf-example
+        name: cnf-iperf-server
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: iperf-server-svc
+    namespace: cnf-telco
+spec:
+  ports:
+  - name: iperf-server-svc
+    port: 5001
+    protocol: TCP
+    targetPort: 5001
+  selector:
+    networkMonitor: "true"
+  type: ClusterIP
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cnf-iperf-client
+  namespace: cnf-telco
+spec:
+  template:
+    spec:
+      containers:
+      - name: cnf-iperf-client
+        image: "nicolaka/netshoot:latest"
+        command: ["/bin/bash",  "-c", "iperf -c iperf-server-svc.cnf-telco.svc.cluster.local", "-f K -w 500K -P 2 -t 300s -i 1s"]
+      restartPolicy: Never
+  backoffLimit: 4
