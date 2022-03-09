@@ -9,6 +9,6 @@ spec:
     networkMonitor: "true",
     }
   targetNamespace: cnf-telco
-  timer: "30s"
-  dataServiceIP: "172.30.61.241"
+  timer: "90s"
+  dataServiceIP: "snoopy-data-svc.snoopy-operator.svc.cluster.local"
   dataServicePort: "51001"
