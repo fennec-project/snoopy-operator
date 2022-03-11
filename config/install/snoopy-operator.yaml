@@ -1,0 +1,420 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    control-plane: snoopy-operator
+  name: snoopy-operator
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.7.0
+  creationTimestamp: null
+  name: snoopydataendpoints.data.fennecproject.io
+spec:
+  group: data.fennecproject.io
+  names:
+    kind: SnoopyDataEndpoint
+    listKind: SnoopyDataEndpointList
+    plural: snoopydataendpoints
+    singular: snoopydataendpoint
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: SnoopyDataEndpoint is the Schema for the snoopydataendpoints API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: SnoopyDataEndpointSpec defines the desired state of SnoopyDataEndpoint
+            properties:
+              serviceName:
+                description: ServiceName is used to create the service for the gRPC endpoint
+                type: string
+              servicePort:
+                description: ServicePort is the exposed port on the service
+                format: int32
+                type: integer
+            required:
+            - serviceName
+            - servicePort
+            type: object
+          status:
+            description: SnoopyDataEndpointStatus defines the observed state of SnoopyDataEndpoint
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.7.0
+  creationTimestamp: null
+  name: snoopyjobs.job.fennecproject.io
+spec:
+  group: job.fennecproject.io
+  names:
+    kind: SnoopyJob
+    listKind: SnoopyJobList
+    plural: snoopyjobs
+    singular: snoopyjob
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: SnoopyJob is the Schema for the snoopyjobs API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: SnoopyJobSpec defines the desired state of SnoopyJob
+            properties:
+              args:
+                description: Args is a string containing all arguments for a given command
+                type: string
+              command:
+                description: 'Command is any linux binary that can be run by podtracer in the context of a Pod Warning: The command must be present in the used potracer image for it to be used'
+                type: string
+              dataServiceIP:
+                description: Ip address for the DataEndpoint where to send collected data
+                type: string
+              dataServicePort:
+                description: Port used by the data service on the data endpoint
+                type: string
+              labelSelector:
+                additionalProperties:
+                  type: string
+                description: LabelSelector is the label to find the target Pods
+                type: object
+              schedule:
+                description: The schedule in Cron format, see https://en.wikipedia.org/wiki/Cron.
+                type: string
+              targetNamespace:
+                description: TargetNamespace is the k8s where the target Pod lives
+                type: string
+              timer:
+                description: Timer sets how much time to run the specified command. Valid example values are 10s, 2m, 1h etc.
+                type: string
+            type: object
+          status:
+            description: SnoopyJobStatus defines the observed state of SnoopyJob
+            properties:
+              cronJobList:
+                items:
+                  type: string
+                type: array
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: snoopy-operator-sa
+  namespace: snoopy-operator
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: leader-election-role
+  namespace: snoopy-operator
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: snoopy-operator-role
+rules:
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - batch
+  resources:
+  - cronjobs
+  - jobs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - pods
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - services
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - data.fennecproject.io
+  resources:
+  - snoopydataendpoints
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - data.fennecproject.io
+  resources:
+  - snoopydataendpoints/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - data.fennecproject.io
+  resources:
+  - snoopydataendpoints/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - job.fennecproject.io
+  resources:
+  - snoopyjobs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - job.fennecproject.io
+  resources:
+  - snoopyjobs/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - job.fennecproject.io
+  resources:
+  - snoopyjobs/status
+  verbs:
+  - get
+  - patch
+  - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: leader-election-rolebinding
+  namespace: snoopy-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: leader-election-role
+subjects:
+- kind: ServiceAccount
+  name: controller-manager
+  namespace: system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: crb-scc-priv-snoopy-operator
+  namespace: snoopy-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:openshift:scc:privileged
+subjects:
+- kind: ServiceAccount
+  name: snoopy-operator-sa
+  namespace: snoopy-operator
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: snoopy-operator-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: snoopy-operator-role
+subjects:
+- kind: ServiceAccount
+  name: snoopy-operator-sa
+  namespace: snoopy-operator
+---
+apiVersion: v1
+data:
+  controller_manager_config.yaml: |
+    apiVersion: controller-runtime.sigs.k8s.io/v1alpha1
+    kind: ControllerManagerConfig
+    health:
+      healthProbeBindAddress: :8081
+    metrics:
+      bindAddress: 127.0.0.1:8080
+    webhook:
+      port: 9443
+    leaderElection:
+      leaderElect: true
+      resourceName: d86c1e11.fennecproject.io
+kind: ConfigMap
+metadata:
+  name: manager-config
+  namespace: snoopy-operator
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    control-plane: snoopy-operator
+  name: snoopy-operator
+  namespace: snoopy-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      control-plane: snoopy-operator
+  template:
+    metadata:
+      labels:
+        control-plane: snoopy-operator
+    spec:
+      containers:
+      - args:
+        - --leader-elect
+        command:
+        - /manager
+        image: quay.io/fennec-project/snoopy-operator:0.0.1-15
+        imagePullPolicy: Always
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        name: snoopy-operator
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: 100m
+            memory: 300Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+      securityContext:
+        runAsNonRoot: true
+      serviceAccountName: snoopy-operator-sa
+      terminationGracePeriodSeconds: 10

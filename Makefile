@@ -36,7 +36,7 @@ IMAGE_TAG_BASE ?= fennecproject.io/snoopy-operator
 BUNDLE_IMG ?= $(IMAGE_TAG_BASE)-bundle:v$(VERSION)
 
 # Image URL to use all building/pushing image targets
-IMG ?= quay.io/fennec-project/snoopy-operator:0.0.1-14
+IMG ?= quay.io/fennec-project/snoopy-operator:0.0.1-15
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd"
 
@@ -84,6 +84,11 @@ fmt: ## Run go fmt against code.
 
 vet: ## Run go vet against code.
 	go vet ./...
+
+# Create install manifests for users without make
+manifest-package: manifests kustomize
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	$(KUSTOMIZE) build config/default | tee config/install/snoopy-operator.yaml
 
 ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
 test: manifests generate fmt vet ## Run tests.
