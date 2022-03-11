@@ -213,3 +213,47 @@ cnf-example-pod-6796b4cb8f-dv7r5
 We can use `kubectl cp snoopy-data-747ff95898-jv964:/pcap .` to download that file and open it on wireshark.
 
 <img src='docs/img/wireshark-sample.png'></img>
+
+## How to contribute
+
+### Community Meetings
+
+Our meetings happen every Wednesday at 1pm Eastern Time.
+
+Snoopy Community Meeting<br>
+Wednesday at 1:00 – 2:00pm EST<br>
+Google Meet joining info:<br>
+[Click here to join the meeting](https://meet.google.com/mvw-ykhv-rin)<br>
+
+[Click here to check the meeting notes](https://docs.google.com/document/d/1RFFSaScSw-hSxEBOLEOT3CPM2S1EVmvQQ8rJ_TxEkJw/edit#)
+
+
+### Development
+
+Requirements: 
+
+- Go1.15+
+- Any Linux distribution
+- Docker or Podman for image building
+- operator-sdk 1.16+
+
+Building from source:
+
+```
+make build
+```
+Set the container image BUILDER and IMG variables in the Makefile available at root of the project to your desired values.
+
+Then build and push the container image with:
+```
+make container-build
+make container-push
+```
+
+In order to run it locally use:
+```
+make run
+```
+
+A better option for debugging is actually using VSCode itself and running on debug mode.
+For details on that please check https://code.visualstudio.com/docs/editor/debugging
