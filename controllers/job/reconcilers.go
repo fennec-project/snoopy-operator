@@ -1,32 +1,49 @@
+// Copyright The Snoopy Operator Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package job
 
 import (
 	"context"
 	"fmt"
 
-	jobv1alpha1 "github.com/fennec-project/snoopy-operator/apis/job/v1alpha1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	apimachinery "k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	jobv1alpha1 "github.com/fennec-project/snoopy-operator/apis/job/v1alpha1"
 )
 
 func (r *SnoopyJobReconciler) reconcileCronJobs(snoopyJob *jobv1alpha1.SnoopyJob, cronJobs *batchv1.CronJobList) error {
 
 	for _, cronJob := range cronJobs.Items {
 
-		err := r.Client.Get(context.TODO(), apimachinery.NamespacedName{Namespace: cronJob.ObjectMeta.Namespace, Name: cronJob.ObjectMeta.Name}, &cronJob)
+		cfgCronJob := cronJob
+		err := r.Client.Get(context.TODO(), apimachinery.NamespacedName{Namespace: cronJob.ObjectMeta.Namespace, Name: cronJob.ObjectMeta.Name}, &cfgCronJob)
 		if err != nil {
 			if errors.IsNotFound(err) {
-				err = r.Client.Create(context.Background(), &cronJob)
+				err = r.Client.Create(context.Background(), &cfgCronJob)
 				if err != nil {
 					fmt.Println(err.Error())
 					return err
 				}
 
-				// Updating Status
+				// Updating Status.
 				snoopyJob.Status.CronJobList = append(snoopyJob.Status.CronJobList, cronJob.ObjectMeta.Name)
 				err = r.Client.Status().Update(context.Background(), snoopyJob)
 				if err != nil {
@@ -46,17 +63,18 @@ func (r *SnoopyJobReconciler) reconcileJobs(snoopyJob *jobv1alpha1.SnoopyJob, jo
 
 	for _, job := range jobs.Items {
 
-		err := r.Client.Get(context.TODO(), apimachinery.NamespacedName{Namespace: job.ObjectMeta.Namespace, Name: job.ObjectMeta.Name}, &job)
+		cfgJob := job
+		err := r.Client.Get(context.TODO(), apimachinery.NamespacedName{Namespace: job.ObjectMeta.Namespace, Name: job.ObjectMeta.Name}, &cfgJob)
 		if err != nil {
 			if errors.IsNotFound(err) {
 
-				err = r.Client.Create(context.Background(), &job)
+				err = r.Client.Create(context.Background(), &cfgJob)
 				if err != nil {
 					fmt.Println(err.Error())
 					return err
 				}
 
-				// Updating Status
+				// Updating Status.
 				snoopyJob.Status.CronJobList = append(snoopyJob.Status.CronJobList, job.ObjectMeta.Name)
 				err = r.Client.Status().Update(context.Background(), snoopyJob)
 				if err != nil {
@@ -74,8 +92,8 @@ func (r *SnoopyJobReconciler) reconcileJobs(snoopyJob *jobv1alpha1.SnoopyJob, jo
 
 func (r *SnoopyJobReconciler) buildCronJobForPods(snoopyJob *jobv1alpha1.SnoopyJob) (*batchv1.CronJobList, error) {
 
-	// Running reconciliation tasks
-	// Target pod list by label and namespace
+	// Running reconciliation tasks.
+	// Target pod list by label and namespace.
 	podlist, err := r.getRunningPodsByLabel(context.TODO(), snoopyJob.Spec.LabelSelector, snoopyJob.Spec.TargetNamespace)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -83,10 +101,10 @@ func (r *SnoopyJobReconciler) buildCronJobForPods(snoopyJob *jobv1alpha1.SnoopyJ
 	}
 
 	cronJobs := &batchv1.CronJobList{}
-	// CronJob creation by target pod
+	// CronJob creation by target pod.
 	for _, pod := range podlist.Items {
 
-		// Build the command with arguments for podtracer
+		// Build the command with arguments for podtracer.
 		podtracerOpts := r.buildPodtracerOptions(snoopyJob)
 
 		podtracerOpts = append(podtracerOpts, "--pod")
@@ -94,7 +112,7 @@ func (r *SnoopyJobReconciler) buildCronJobForPods(snoopyJob *jobv1alpha1.SnoopyJ
 		podtracerOpts = append(podtracerOpts, "-n")
 		podtracerOpts = append(podtracerOpts, pod.ObjectMeta.Namespace)
 
-		// Generate the Cronjob object
+		// Generate the Cronjob object.
 		cronJob, err := r.CronJob(podtracerOpts, pod.ObjectMeta.Name, pod.Spec.NodeName, snoopyJob.Spec.Schedule)
 		if err != nil {
 			return nil, err
@@ -110,8 +128,8 @@ func (r *SnoopyJobReconciler) buildCronJobForPods(snoopyJob *jobv1alpha1.SnoopyJ
 
 func (r *SnoopyJobReconciler) buildJobForPods(snoopyJob *jobv1alpha1.SnoopyJob) (*batchv1.JobList, error) {
 
-	// Running reconciliation tasks
-	// Target pod list by label and namespace
+	// Running reconciliation tasks.
+	// Target pod list by label and namespace.
 	podlist, err := r.getRunningPodsByLabel(context.TODO(), snoopyJob.Spec.LabelSelector, snoopyJob.Spec.TargetNamespace)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -119,10 +137,10 @@ func (r *SnoopyJobReconciler) buildJobForPods(snoopyJob *jobv1alpha1.SnoopyJob) 
 	}
 
 	jobs := &batchv1.JobList{}
-	// CronJob creation by target pod
+	// CronJob creation by target pod.
 	for _, pod := range podlist.Items {
 
-		// Build the command with arguments for podtracer
+		// Build the command with arguments for podtracer.
 		podtracerOpts := r.buildPodtracerOptions(snoopyJob)
 
 		podtracerOpts = append(podtracerOpts, "--pod")
@@ -130,7 +148,7 @@ func (r *SnoopyJobReconciler) buildJobForPods(snoopyJob *jobv1alpha1.SnoopyJob) 
 		podtracerOpts = append(podtracerOpts, "-n")
 		podtracerOpts = append(podtracerOpts, pod.ObjectMeta.Namespace)
 
-		// Generate the Cronjob object
+		// Generate the Cronjob object.
 		job, err := r.Job(podtracerOpts, pod.ObjectMeta.Name, pod.Spec.NodeName)
 		if err != nil {
 			return nil, err
