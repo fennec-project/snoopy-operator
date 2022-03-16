@@ -1,3 +1,17 @@
+// Copyright The Snoopy Operator Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package job
 
 import (
@@ -51,9 +65,9 @@ func (r *SnoopyJobReconciler) CronJob(podtracerArgsList []string, targetPodName 
 			// The schedule in Cron format, see https://en.wikipedia.org/wiki/Cron.
 			Schedule: schedule,
 
-			// Optional deadline in seconds for starting the job if it misses scheduled
+			// Optional deadline in seconds for starting the job if it misses scheduled.
 			// time for any reason.  Missed jobs executions will be counted as failed ones.
-			// optional
+			// optional.
 			StartingDeadlineSeconds: StartingDeadlineSeconds,
 
 			// Specifies how to treat concurrent executions of a Job.
@@ -74,12 +88,12 @@ func (r *SnoopyJobReconciler) CronJob(podtracerArgsList []string, targetPodName 
 
 			// The number of successful finished jobs to retain.
 			// This is a pointer to distinguish between explicit zero and not specified.
-			// optional
+			// optional.
 			SuccessfulJobsHistoryLimit: SuccessfulJobsHistoryLimit,
 
 			// The number of failed finished jobs to retain.
 			// This is a pointer to distinguish between explicit zero and not specified.
-			// optional
+			// optional.
 			FailedJobsHistoryLimit: FailedJobsHistoryLimit,
 		},
 	}
@@ -96,7 +110,7 @@ func (r *SnoopyJobReconciler) JobTemplateSpec(podtracerArgsList []string, target
 
 	privileged = true
 
-	// TODO: improve the labeling system to identify jobs running
+	// TODO: improve the labeling system to identify jobs running.
 	PodTemplateSpec := corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "snoopy-worker",
