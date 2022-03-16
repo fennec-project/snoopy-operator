@@ -15,6 +15,8 @@
 package data
 
 import (
+	"log"
+
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -41,7 +43,7 @@ func (r *SnoopyDataEndpointReconciler) serviceForDataEndpoint(dataEndpoint *data
 	}
 	// Set dataEndpoint instance as the owner and controller.
 	if err := controllerutil.SetControllerReference(dataEndpoint, service, r.Scheme); err != nil {
-		return dataEndpoint.DeepCopy()
+		log.Fatal(err)
 	}
 	return service
 }

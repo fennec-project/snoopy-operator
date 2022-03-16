@@ -15,6 +15,8 @@
 package data
 
 import (
+	"log"
+
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -59,7 +61,7 @@ func (r *SnoopyDataEndpointReconciler) deploymentForDataEndpoint(dataEndpoint *d
 	}
 	// Set dataEndpoint instance as the owner and controller.
 	if err := controllerutil.SetControllerReference(dataEndpoint, deploy, r.Scheme); err != nil {
-		return dataEndpoint.DeepCopy()
+		log.Fatal(err)
 	}
 
 	return deploy

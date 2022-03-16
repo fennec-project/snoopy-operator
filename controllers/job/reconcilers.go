@@ -31,20 +31,19 @@ import (
 
 func (r *SnoopyJobReconciler) reconcileCronJobs(snoopyJob *jobv1alpha1.SnoopyJob, cronJobs *batchv1.CronJobList) error {
 
-	for _, cronJob := range cronJobs.Items {
+	for i := range cronJobs.Items {
 
-		cfgCronJob := cronJob
-		err := r.Client.Get(context.TODO(), apimachinery.NamespacedName{Namespace: cronJob.ObjectMeta.Namespace, Name: cronJob.ObjectMeta.Name}, &cfgCronJob)
+		err := r.Client.Get(context.TODO(), apimachinery.NamespacedName{Namespace: cronJobs.Items[i].ObjectMeta.Namespace, Name: cronJobs.Items[i].ObjectMeta.Name}, &cronJobs.Items[i])
 		if err != nil {
 			if errors.IsNotFound(err) {
-				err = r.Client.Create(context.Background(), &cfgCronJob)
+				err = r.Client.Create(context.Background(), &cronJobs.Items[i])
 				if err != nil {
 					fmt.Println(err.Error())
 					return err
 				}
 
 				// Updating Status.
-				snoopyJob.Status.CronJobList = append(snoopyJob.Status.CronJobList, cronJob.ObjectMeta.Name)
+				snoopyJob.Status.CronJobList = append(snoopyJob.Status.CronJobList, cronJobs.Items[i].ObjectMeta.Name)
 				err = r.Client.Status().Update(context.Background(), snoopyJob)
 				if err != nil {
 					return nil
@@ -61,21 +60,20 @@ func (r *SnoopyJobReconciler) reconcileCronJobs(snoopyJob *jobv1alpha1.SnoopyJob
 
 func (r *SnoopyJobReconciler) reconcileJobs(snoopyJob *jobv1alpha1.SnoopyJob, jobs *batchv1.JobList) error {
 
-	for _, job := range jobs.Items {
+	for i := range jobs.Items {
 
-		cfgJob := job
-		err := r.Client.Get(context.TODO(), apimachinery.NamespacedName{Namespace: job.ObjectMeta.Namespace, Name: job.ObjectMeta.Name}, &cfgJob)
+		err := r.Client.Get(context.TODO(), apimachinery.NamespacedName{Namespace: jobs.Items[i].ObjectMeta.Namespace, Name: jobs.Items[i].ObjectMeta.Name}, &jobs.Items[i])
 		if err != nil {
 			if errors.IsNotFound(err) {
 
-				err = r.Client.Create(context.Background(), &cfgJob)
+				err = r.Client.Create(context.Background(), &jobs.Items[i])
 				if err != nil {
 					fmt.Println(err.Error())
 					return err
 				}
 
 				// Updating Status.
-				snoopyJob.Status.CronJobList = append(snoopyJob.Status.CronJobList, job.ObjectMeta.Name)
+				snoopyJob.Status.CronJobList = append(snoopyJob.Status.CronJobList, jobs.Items[i].ObjectMeta.Name)
 				err = r.Client.Status().Update(context.Background(), snoopyJob)
 				if err != nil {
 					return err
