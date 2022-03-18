@@ -35,8 +35,11 @@ IMAGE_TAG_BASE ?= fennecproject.io/snoopy-operator
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
 BUNDLE_IMG ?= $(IMAGE_TAG_BASE)-bundle:v$(VERSION)
 
+# defaults to podman if not set
+BUILDER ?= podman
+
 # Image URL to use all building/pushing image targets
-IMG ?= quay.io/fennec-project/snoopy-operator:0.0.1-14
+IMG ?= quay.io/fennec-project/snoopy-operator:0.0.1-15
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd"
 
@@ -85,6 +88,11 @@ fmt: ## Run go fmt against code.
 vet: ## Run go vet against code.
 	go vet ./...
 
+# Create install manifests for users without make
+manifest-package: manifests kustomize
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	$(KUSTOMIZE) build config/default | tee config/install/snoopy-operator.yaml
+
 ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
 test: manifests generate fmt vet ## Run tests.
 	mkdir -p ${ENVTEST_ASSETS_DIR}
@@ -112,11 +120,13 @@ build: generate fmt vet ## Build manager binary.
 run: manifests generate fmt vet ## Run a controller from your host.
 	go run ./main.go
 
-docker-build: test ## Build docker image with the manager.
-	podman build -t ${IMG} .
+# Container Build builds podtracer container image
+container-build:
+	${BUILDER} build -t ${IMG} .
 
-docker-push: ## Push docker image with the manager.
-	podman push ${IMG}
+# container-push pushes to quay image path indicated by ${IMG}
+container-push:
+	${BUILDER} push ${IMG}
 
 ##@ Deployment
 

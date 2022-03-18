@@ -1,10 +1,6 @@
 # snoopy-operator
 
-### Community Meetings
-
-Public calendar with regular meetings for 2022 will be available soon.
-
----
+> :warning: **This is a tech preview! It's not production ready yet. We don't recommend trying in production enviroments for the moment.
 
 ### A Cloud Native Way for Pod Deep Inspection
 
@@ -22,12 +18,22 @@ In order to achieve it's results it makes use of [podtracer](https://github.com/
 
 ### Road Map
 
-At this moment snoopy-operator can run podtracer through its jobs and use networkign tools to accomplish desired tasks targeting labeled Pods. For the moment only network related tools have been successfuly tested. Among many desired features we highlight a few that are part of our community discussions below:
+At this moment snoopy-operator can run podtracer through its jobs and use networking tools to accomplish desired tasks targeting labeled Pods. For the moment only network related tools have been successfuly tested. Among many desired features we highlight a few that are part of our community discussions below:
 
 - Send the retrieved data to a central server (Kafka for ex.) to be consumed by specialized processes as part of a data processing pipeline.
 - Including tools that can go beyond networking when needed.
-- Including eBPF filters for security monitoring.
-- The creation of a data pipeline and dashboard to analyze and publish results.
+- Integrate Network Flow Tools for analysis
+
+### Community Meetings
+
+Our meetings happen every Wednesday at 1pm Eastern Time.
+
+Snoopy Community Meeting<br>
+Wednesday at 1:00 – 2:00pm EST<br>
+Google Meet joining info:<br>
+[Click here to join the meeting](https://meet.google.com/ozo-pecp-dwe)<br>
+
+[Click here to check the meeting notes](https://docs.google.com/document/d/1RFFSaScSw-hSxEBOLEOT3CPM2S1EVmvQQ8rJ_TxEkJw/edit#)
 
 ### Install Instructions
 
@@ -99,24 +105,44 @@ cd snoopy-operator
 ```
 #### Step 0: If you don't have target Pods
 
-You can use the sample deployment that can be found at config/samples/sample-deployment.yaml. It will create a namespace called cnf-telco, a service account and a sample deployment with 2 Pods. They are already labeled with the labels used with the other CR examples in order to be found by Snoopy Operator. They are not running any particular command only sleep indefinitely for you to login into them and run any commands available and permit to be run. You might simply ping to generate some traffic or run iperf by hand from them or replace the command and args on the Deployment definition for any entry point you would like to. The image for those containers is the one found [here](https://github.com/nicolaka/netshoot) Just remember that the sample deployment doesn't have special privileges and can't do root tasks. That would require some RBAC configuration.
+You can use the sample deployment that can be found at config/samples/sample-deployment-ping-traffic.yaml. It will create a namespace called cnf-telco, a service account and a sample deployment with 1 Pod. The Pod is already labeled with the label with networkMonitor=true in order to be found by Snoopy Operator. They will keep pinging a public address to generate trafffic. With that we have traffic going out the primary network interface eth0 on that Pod that can be inspected by another job running tcpdump for example.
 
-After crafting the sample deployment with desired changes, if that's the case, run:
+Let's create the sample deployment first:
 ```
 kubectl apply -f config/samples/sample-deployment.yaml
 ```
-You should see pods running in the cnf-telco namespace.
+You should see something like below:
+
+```
+namespace/cnf-telco created
+serviceaccount/cnf-telco-sa created
+deployment.apps/cnf-example-pod created
+```
 
 #### Step 1: Deploying the Operator Itself
 
 Then deploy the operator by running:
 ```
-make deploy
+kubectl apply -f config/install/snoopy-operator.yaml
 ```
 This command will deploy all the manifests needed to run the operator. Namespace creation, service accounts and other RBAC resources and the operator deployment itself.
 
-After that you shoud be able to see the operator pod running in the snoopy-operator namespace.
+You should see something like this:
+```
+namespace/snoopy-operator created
+customresourcedefinition.apiextensions.k8s.io/snoopydataendpoints.data.fennecproject.io created
+customresourcedefinition.apiextensions.k8s.io/snoopyjobs.job.fennecproject.io created
+serviceaccount/snoopy-operator-sa created
+role.rbac.authorization.k8s.io/leader-election-role created
+clusterrole.rbac.authorization.k8s.io/snoopy-operator-role created
+rolebinding.rbac.authorization.k8s.io/leader-election-rolebinding created
+clusterrolebinding.rbac.authorization.k8s.io/crb-scc-priv-snoopy-operator created
+clusterrolebinding.rbac.authorization.k8s.io/snoopy-operator-rolebinding created
+configmap/manager-config created
+deployment.apps/snoopy-operator created
+```
 
+After that you shoud be able to see the operator pod running in the snoopy-operator namespace.
 ```
 kubectl get pods -n snoopy-operator
 NAME                              READY   STATUS    RESTARTS   AGE
@@ -149,10 +175,7 @@ snoopy-data-svc   ClusterIP   172.30.228.157   <none>        51001/TCP   71s
 
 #### Step 3: Running the desired Jobs against the target Pods:
 
-Assuming that we already have target Pods running on a specific target Kubernetes Namespace and that those Pods are already labeled with information useful for this task we may proceed from here.
-
-Take the IP address of your service (subject to change soon for using only the service name) and use it on the SnoopyJob CR like below:
-
+Assuming that we already have the target Pod running on a specific target Kubernetes Namespace and that it's already labeled with networkMonitor=true, which is the case with our sample-deployment-ping-traffic.yaml, we may proceed from here.
 ```
 apiVersion: job.fennecproject.io/v1alpha1
 kind: SnoopyJob
@@ -160,46 +183,74 @@ metadata:
   name: snoopy-samplejob
 spec:
   command: "tcpdump"
-  args: "-n -i eth0"
+  args: "-i eth0 -U -w -"
   labelSelector: { 
     networkMonitor: "true",
     }
   targetNamespace: cnf-telco
   timer: "2m"
-  dataServiceIP: "172.30.228.157"
+  dataServiceIP: "snoopy-data-svc.snoopy-operator.svc.cluster.local"
   dataServicePort: "51001"
 ```
+ > :warning: Please remark for this example that we have a few specials parameters on tcpdump to be able to use wireshark in the end. We need raw packets written to standard out of tcpdump which won't go to the snoopyJob's Pod stdout but instead will be copied to our snoopy data endpoint as a raw stream of packets to store in pcap files. So if you want to analyse pcap files the options `-U -w -` that you see above are necessary.
 
-You can find the sample and change it at config/samples/job_v1alpha1_snoopyjob.yaml. Then apply the file to Kubernetes:
-```
-kubectl apply -f config/samples/job_v1alpha1_snoopyjob.yaml
-```
-That will spin up your podtracer job Pods that are responsible for finding the target Pods and capture data from them. For now it creates one Pod by target Pod to execute the task. In this example we're using tcpdump with a 2 minutes timer set.
 
+You can find the sample job and change it at config/samples/job_v1alpha1_snoopyjob.yaml. Then apply the file to Kubernetes:
+```
+kubectl apply -f config/samples/job_v1alpha1_snoopyjob_packet_capture.yaml
+```
+That will spin up your podtracer job Pods that are responsible for finding the target Pods and capture data from them. For now it creates one Pod by target Pod to execute the task. In this example we're using tcpdump with a 2 minutes timer set. And no worries about what node the target Pod is running. Snoopy operator is in charge of that and schedules the job workload on the right node.
 ```
 kubectl get pods -n snoopy-operator
-NAME                                                READY   STATUS    RESTARTS   AGE
-snoopy-data-5dd97b6b69-wx8fm                        1/1     Running   0          7m24s
-snoopy-job-cnf-example-pod-6796b4cb8f-4z58j-mvbgd   1/1     Running   0          15s
-snoopy-job-cnf-example-pod-6796b4cb8f-n7dk8-8zm7n   1/1     Running   0          15s
-snoopy-job-cnf-example-pod-6796b4cb8f-p88z4-55dpz   1/1     Running   0          15s
-snoopy-job-cnf-example-pod-6796b4cb8f-tmthn-7rx56   1/1     Running   0          15s
-snoopy-job-cnf-example-pod-6796b4cb8f-w4sgm-jfqdt   1/1     Running   0          15s
-snoopy-operator-ff7889898-p2rm4                     1/1     Running   0          24m
+NAME                                                   READY   STATUS    RESTARTS   AGE
+snoopy-data-747ff95898-jv964                           1/1     Running   0          3m13s
+snoopy-job-cnf-example-pod-6796b4cb8f-dv7r5--1-58jlf   1/1     Running   0          4s
+snoopy-operator-7678cccd8c-fgf7w                       1/1     Running   0          119m
 ```
 
 #### Step 4: Retrieving the Data Captured from the Desired Pods
 
-Data will flow out and land on the snoopy-data Pod where the gRPC data collector server is running. In our example we captured data from 5 Pods previously deployed with the sample deployment file found at config/samples/sample-deployment.yaml altered to 5 replicas instead of 2 and running a ping command instead of sleeping. Remark that the sample-deployment.yaml already has a label that can be used by the CRs in the example. If we login into the data pod and run ls we can see the files created with the Pod names. The contents of whatever command is being run can be retrived from those files. Our next step is to enable this gRPC server to become a Kafka producer.
+Data will flow out and land on the snoopy-data Pod where the gRPC data collector server is running. By logging int the data pod we can see a new file under the pcap folder. That's our pcap file with raw data inside.
 
 ```
-kubectl exec -it snoopy-data-5dd97b6b69-wx8fm -- /bin/bash
-bash-5.1# ls
-bin                               cnf-example-pod-6796b4cb8f-w4sgm  lib64                             root                              sys
-cnf-example-pod-6796b4cb8f-4z58j  dev                               media                             run                               tmp
-cnf-example-pod-6796b4cb8f-n7dk8  etc                               mnt                               sbin                              usr
-cnf-example-pod-6796b4cb8f-p88z4  home                              opt                               server                            var
-cnf-example-pod-6796b4cb8f-tmthn  lib                               proc                              srv
+kubectl exec -it snoopy-data-747ff95898-jv964 -- /bin/bash
+bash-5.1# ls pcap/
+cnf-example-pod-6796b4cb8f-dv7r5
 ```
 
+We can use `kubectl cp snoopy-data-747ff95898-jv964:/pcap .` to download that file and open it on wireshark.
 
+<img src='docs/img/wireshark-sample.png'></img>
+
+
+## How to Contribute
+
+### Development
+
+Requirements: 
+
+- Go1.15+
+- Any Linux distribution
+- Docker or Podman for image building
+- operator-sdk 1.16+
+
+Building from source:
+
+```
+make build
+```
+Set the container image BUILDER and IMG variables in the Makefile available at root of the project to your desired values.
+
+Then build and push the container image with:
+```
+make container-build
+make container-push
+```
+
+In order to run it locally use:
+```
+make run
+```
+
+A better option for debugging is actually using VSCode itself and running on debug mode.
+For details on that please check https://code.visualstudio.com/docs/editor/debugging
