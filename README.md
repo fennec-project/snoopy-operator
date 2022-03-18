@@ -1,10 +1,6 @@
 # snoopy-operator
 
-### Community Meetings
-
-Public calendar with regular meetings for 2022 will be available soon.
-
----
+> :warning: **This is a tech preview! It's not production ready yet. We don't recommend trying in production enviroments for the moment.
 
 ### A Cloud Native Way for Pod Deep Inspection
 
@@ -22,12 +18,22 @@ In order to achieve it's results it makes use of [podtracer](https://github.com/
 
 ### Road Map
 
-At this moment snoopy-operator can run podtracer through its jobs and use networkign tools to accomplish desired tasks targeting labeled Pods. For the moment only network related tools have been successfuly tested. Among many desired features we highlight a few that are part of our community discussions below:
+At this moment snoopy-operator can run podtracer through its jobs and use networking tools to accomplish desired tasks targeting labeled Pods. For the moment only network related tools have been successfuly tested. Among many desired features we highlight a few that are part of our community discussions below:
 
 - Send the retrieved data to a central server (Kafka for ex.) to be consumed by specialized processes as part of a data processing pipeline.
 - Including tools that can go beyond networking when needed.
-- Including eBPF filters for security monitoring.
-- The creation of a data pipeline and dashboard to analyze and publish results.
+- Integrate Network Flow Tools for analysis
+
+### Community Meetings
+
+Our meetings happen every Wednesday at 1pm Eastern Time.
+
+Snoopy Community Meeting<br>
+Wednesday at 1:00 – 2:00pm EST<br>
+Google Meet joining info:<br>
+[Click here to join the meeting](https://meet.google.com/ozo-pecp-dwe)<br>
+
+[Click here to check the meeting notes](https://docs.google.com/document/d/1RFFSaScSw-hSxEBOLEOT3CPM2S1EVmvQQ8rJ_TxEkJw/edit#)
 
 ### Install Instructions
 
@@ -186,6 +192,8 @@ spec:
   dataServiceIP: "snoopy-data-svc.snoopy-operator.svc.cluster.local"
   dataServicePort: "51001"
 ```
+ > :warning: Please remark for this example that we have a few specials parameters on tcpdump to be able to use wireshark in the end. We need raw packets written to standard out of tcpdump which won't go to the snoopyJob's Pod stdout but instead will be copied to our snoopy data endpoint as a raw stream of packets to store in pcap files. So if you want to analyse pcap files the options `-U -w -` that you see above are necessary.
+
 
 You can find the sample job and change it at config/samples/job_v1alpha1_snoopyjob.yaml. Then apply the file to Kubernetes:
 ```
@@ -214,19 +222,8 @@ We can use `kubectl cp snoopy-data-747ff95898-jv964:/pcap .` to download that fi
 
 <img src='docs/img/wireshark-sample.png'></img>
 
-## How to contribute
 
-### Community Meetings
-
-Our meetings happen every Wednesday at 1pm Eastern Time.
-
-Snoopy Community Meeting<br>
-Wednesday at 1:00 – 2:00pm EST<br>
-Google Meet joining info:<br>
-[Click here to join the meeting](https://meet.google.com/mvw-ykhv-rin)<br>
-
-[Click here to check the meeting notes](https://docs.google.com/document/d/1RFFSaScSw-hSxEBOLEOT3CPM2S1EVmvQQ8rJ_TxEkJw/edit#)
-
+## How to Contribute
 
 ### Development
 
