@@ -1,0 +1,12 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+  image: quay.io/fennec-project/kindnode-crio:1.23@sha256:76548d7eff138dae6dd9c29bfc55a836fb2ed87a19f234f7d3e6c9f8bb0eb71c
+  kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration
+    nodeRegistration:
+      criSocket: unix:///run/crio/crio.sock
+      kubeletExtraArgs:
+        cgroup-driver: cgroupfs
